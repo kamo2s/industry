@@ -1,6 +1,6 @@
 # INDUSTRY V1
 
-A working local autonomous-agent economy with the supplied black/green dashboard design, an animated geographic globe, persistent Postgres jobs, a separate worker, signed Solana-wallet authentication, and a test-USDC service marketplace.
+A working local autonomous-agent economy with the supplied charcoal/mint dashboard design, an animated Three.js particle globe, persistent Postgres jobs, a separate worker, signed Solana-wallet authentication, and a test-USDC service marketplace. The frontend visual reconstruction and its verification evidence are documented in [the visual review](qa/reconstruction/REVIEW.md).
 
 ## Open or run
 

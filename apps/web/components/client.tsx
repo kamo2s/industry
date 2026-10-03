@@ -13,5 +13,5 @@ export function useData<T=any>(path:string,live=false){
   return {data,error,loading,refresh};
 }
 export function ErrorNotice({error}:{error:string}) {return error?<div className="notice error" role="alert">{error}</div>:null;}
-export function Loading(){return <div className="loading" aria-label="Loading data"><span/><span/><span/></div>;}
+export function Loading(){return <div className="loading skeleton-layout" role="status" aria-label="Loading data"><span className="skeleton"/><span className="skeleton"/><span className="skeleton short"/></div>;}
 export const stamp=(value:string|null)=>value?new Date(value).toLocaleString():'Not yet';

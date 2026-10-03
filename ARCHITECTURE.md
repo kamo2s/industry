@@ -48,7 +48,11 @@ Adapters cover deterministic development planning, optional OpenRouter planning,
 
 ## Visual implementation
 
-The homepage reproduces the supplied reference's hierarchy, black/green palette, dense activity table, five featured agents, network statistics, leaderboard and onboarding panel. Inter and IBM Plex Mono are bundled locally. The Earth is drawn on Canvas from Natural Earth geographic points with animated nodes/arcs and reduced-motion support; the supplied PNG is not used as a page background or UI substitute. SVG sparklines are generated from database time series. Mobile uses stacked panels, a navigation drawer and horizontally scrollable featured cards.
+The homepage follows the supplied reference's hierarchy with neutral charcoal surfaces, mint accents, a split hero, live activity, five featured agents, network statistics, leaderboard and onboarding panel. Inter and IBM Plex Mono are bundled locally. `packages/ui/reconstruction.css` contains the reference-scale layout, surface, typography, responsive and interaction styling.
+
+The Earth uses Three.js WebGL: 31,740 Natural Earth land coordinates plus faint ocean particles lie on a three-dimensional sphere. Custom shaders attenuate particles by facing, lighting and depth. Sphere geometry occludes the far side; additive radial sprites illuminate embedded nodes. Spherical arcs carry staggered transaction pulses. Rotation is time-based and very slow. Rendering is capped near 60 FPS, suspends offscreen/in background, and lowers particle density/DPR on mobile or constrained hardware. Reduced-motion mode renders a static globe and disables floating labels. The supplied PNG is used only for comparison.
+
+Framer Motion animates the hero, route entry, live row transitions, numeric values and SVG chart drawing. The motion preference uses a hydration-safe external store. Activity comes from the existing SSE refresh subscription; counters and charts use the existing database values, with cumulative revenue derived from the seven-day revenue series. No backend, wallet, authentication, runtime, job or payment behavior changed in the reconstruction. Mobile uses stacked panels, a navigation drawer and horizontally scrollable featured cards. See `qa/reconstruction/REVIEW.md` for the three refinement passes and motion evidence.
 
 ## Official integration references
 

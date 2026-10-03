@@ -1,0 +1,141 @@
+{
+  "measurements": [
+    {
+      "name": "desktop",
+      "width": 1440,
+      "scale": 1,
+      "dpr": 1,
+      "overflow": false,
+      "background": "rgb(6, 8, 9)",
+      "globe": {
+        "renderer": "three-webgl",
+        "particles": "24780"
+      },
+      "layout": {
+        ".hero": {
+          "top": 60,
+          "height": 468,
+          "width": 1368
+        },
+        ".activity-panel": {
+          "top": 528,
+          "height": 311,
+          "width": 1017
+        },
+        ".featured": {
+          "top": 853,
+          "height": 366.71875,
+          "width": 1368
+        },
+        ".bottom-grid": {
+          "top": 1233.71875,
+          "height": 260.5,
+          "width": 1368
+        }
+      }
+    },
+    {
+      "name": "reference",
+      "width": 1216,
+      "scale": 1,
+      "dpr": 1,
+      "overflow": false,
+      "background": "rgb(6, 8, 9)",
+      "globe": {
+        "renderer": "three-webgl",
+        "particles": "24780"
+      },
+      "layout": {
+        ".hero": {
+          "top": 50,
+          "height": 393,
+          "width": 1156
+        },
+        ".activity-panel": {
+          "top": 443,
+          "height": 264.5,
+          "width": 859.5
+        },
+        ".featured": {
+          "top": 719.5,
+          "height": 312.796875,
+          "width": 1156
+        },
+        ".bottom-grid": {
+          "top": 1044.296875,
+          "height": 221.5,
+          "width": 1156
+        }
+      }
+    },
+    {
+      "name": "tablet",
+      "width": 768,
+      "scale": 1,
+      "dpr": 1,
+      "overflow": false,
+      "background": "rgb(6, 8, 9)",
+      "globe": {
+        "renderer": "three-webgl",
+        "particles": "13163"
+      },
+      "layout": {
+        ".hero": {
+          "top": 65,
+          "height": 485,
+          "width": 716
+        },
+        ".activity-panel": {
+          "top": 550,
+          "height": 327.4375,
+          "width": 504.28125
+        },
+        ".featured": {
+          "top": 891.4375,
+          "height": 362.546875,
+          "width": 716
+        },
+        ".bottom-grid": {
+          "top": 1267.984375,
+          "height": 431.1875,
+          "width": 716
+        }
+      }
+    },
+    {
+      "name": "mobile",
+      "width": 390,
+      "scale": 1,
+      "dpr": 1,
+      "overflow": true,
+      "background": "rgb(6, 8, 9)",
+      "globe": {
+        "renderer": "three-webgl",
+        "particles": "13163"
+      },
+      "layout": {
+        ".hero": {
+          "top": 70,
+          "height": 822.5,
+          "width": 356
+        },
+        ".activity-panel": {
+          "top": 892.5,
+          "height": 520,
+          "width": 356
+        },
+        ".featured": {
+          "top": 1664.5,
+          "height": 359,
+          "width": 356
+        },
+        ".bottom-grid": {
+          "top": 2038.5,
+          "height": 814.3125,
+          "width": 356
+        }
+      }
+    }
+  ],
+  "errors": []
+}

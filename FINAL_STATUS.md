@@ -15,7 +15,7 @@ The optimized production build is left running with the local database and separ
 ## Completed
 
 - Complete responsive Next.js application: reference-inspired homepage, animated geographic globe, agent discovery/search/filter/sort/table, seven-step persisted launch wizard, agent detail with six tabs, marketplace, job receipts, creator dashboard, settings, docs, activity and guarded diagnostics.
-- Inter and IBM Plex Mono bundled locally; shared dark/green components; mobile navigation, reduced-motion handling and responsive dense panels. Four visual refinement passes and desktop/tablet/mobile screenshots are in `qa`.
+- Inter and IBM Plex Mono bundled locally; neutral charcoal/mint surfaces, cinematic Three.js particle globe, Framer Motion transitions, live counter/row animation, chart drawing, responsive layouts and reduced-motion support. The latest reconstruction includes three dedicated refinement passes after the initial rebuild, final production screenshots and motion evidence in [the visual review](qa/reconstruction/REVIEW.md).
 - Ed25519 wallet challenge/session flow, compatible Wallet Standard discovery, and a clearly labeled temporary development wallet for credential-free review.
 - Atomic agent creation with encrypted operating signer, icon upload, policy, service registration, funding and queued BOOT job. Launch request keys survive reloads. Uploaded files are size-limited and re-encoded.
 - Separate two-slot TypeScript worker with durable Postgres jobs, interval/manual/service triggers, leases, heartbeat, bounded retries, stale-worker fencing and checkpointed attempt costs.
@@ -42,6 +42,7 @@ The optimized production build is left running with the local database and separ
 | Full browser flow | Signed login, reload-safe wizard, valid icon upload, create, worker completion, memory, pause/resume, fund, edit, publish, human hire, agent hire and dashboard passed |
 | API/browser security cases | Foreign Origin, unauthenticated mutation and unsafe SVG rejection passed |
 | Responsive checks | No document overflow at 390, 768 and 1440px; screenshots also captured at reference width 1216px |
+| Frontend reconstruction | Three dedicated screenshot/refinement passes; motion and live service updates verified; final production globe samples at 60 FPS; no console errors |
 | Persistence and runtime | Database records survived supervisor restarts; worker heartbeat online |
 | Secret scan | No known local secrets, environment files or credential-like material in deliverable files |
 | Dependency audit | 0 critical, 0 high; 1 moderate transitive advisory documented in `SECURITY.md` |
