@@ -1,7 +1,7 @@
 import { chromium,expect } from '@playwright/test';
 import { mkdir,readFile,writeFile } from 'node:fs/promises';
 
-const pass=process.argv[2]||'baseline',directory='qa/polish';
+const pass=process.argv[2]||'baseline',directory=process.argv[3]||'qa/polish';
 await mkdir(directory,{recursive:true});
 const browser=await chromium.launch({channel:'msedge'});
 const page=await browser.newPage({viewport:{width:1440,height:1000},deviceScaleFactor:1,reducedMotion:'reduce'});

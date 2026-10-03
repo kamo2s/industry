@@ -20,9 +20,9 @@ export function createNetworkGlobe(host:HTMLDivElement,land:number[][]){
       attribute float aSeed; attribute float aLand; varying float vAlpha; varying float vSeed;
       void main(){vec4 view=modelViewMatrix*vec4(position,1.0);vec3 normal=normalize(normalMatrix*position);
         float facing=dot(normal,normalize(-view.xyz));
-        float front=smoothstep(-0.02,0.28,facing)*(0.15+0.85*pow(max(facing,0.0),1.4));
+        float front=smoothstep(-0.02,0.28,facing)*(0.12+0.88*pow(max(facing,0.0),1.5));
         float light=0.25+0.75*max(0.0,dot(normal,normalize(vec3(-0.3,0.45,1.0))));
-        float depth=0.6+0.4*(1.0-smoothstep(2.1,3.5,-view.z));
+        float depth=0.56+0.44*(1.0-smoothstep(2.1,3.5,-view.z));
         float localLight=0.0;for(int i=0;i<4;i++){vec3 d=normalize(position)-uNodes[i];localLight+=exp(-dot(d,d)*95.0);}
         float shimmer=0.93+0.07*sin(aSeed*90.0+uTime*0.48*(1.0-uReduced));
         vAlpha=(mix(0.085,0.91,aLand)*light*depth*(0.16+pow(aSeed,1.35)*1.2)+localLight*0.34*aLand)*front*shimmer;vSeed=aSeed;
@@ -50,16 +50,16 @@ export function createNetworkGlobe(host:HTMLDivElement,land:number[][]){
   // A geometric, directionally lit atmosphere follows the sphere, not the DOM.
   const atmosphereGeometry=new THREE.SphereGeometry(1.018,48,32);geometries.push(atmosphereGeometry);
   const atmosphereMaterial=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
-    uniforms:{uStrength:{value:constrained?.085:.14}},
+    uniforms:{uStrength:{value:constrained?.085:.15}},
     vertexShader:'varying vec3 vNormal;varying vec3 vPosition;void main(){vNormal=normalize(normalMatrix*normal);vec4 p=modelViewMatrix*vec4(position,1.);vPosition=p.xyz;gl_Position=projectionMatrix*p;}',
     fragmentShader:`uniform float uStrength;varying vec3 vNormal;varying vec3 vPosition;
-      void main(){vec3 n=normalize(vNormal);float facing=abs(dot(n,normalize(-vPosition)));float rim=pow(1.0-facing,2.2)*smoothstep(0.0,.33,facing);
+      void main(){vec3 n=normalize(vNormal);float facing=abs(dot(n,normalize(-vPosition)));float rim=pow(1.0-facing,2.3)*smoothstep(0.0,.36,facing);
         float light=.22+.78*max(dot(n,normalize(vec3(-.8,.1,1.))),0.);gl_FragColor=vec4(.06,.48,.32,rim*light*uStrength);}`
   });materials.push(atmosphereMaterial);earth.add(new THREE.Mesh(atmosphereGeometry,atmosphereMaterial));
   // Broad additive falloff blooms bright nodes without glowing every surface dot.
   const glowCanvas=document.createElement('canvas');glowCanvas.width=128;glowCanvas.height=128;
   const ctx=glowCanvas.getContext('2d')!,gradient=ctx.createRadialGradient(64,64,0,64,64,64);
-  gradient.addColorStop(0,'rgba(246,255,251,1)');gradient.addColorStop(.035,'rgba(232,255,247,1)');gradient.addColorStop(.09,'rgba(155,255,211,.98)');gradient.addColorStop(.24,'rgba(58,247,159,.4)');gradient.addColorStop(.5,'rgba(30,213,126,.085)');gradient.addColorStop(1,'rgba(14,140,95,0)');
+  gradient.addColorStop(0,'rgba(246,255,251,1)');gradient.addColorStop(.04,'rgba(232,255,247,.94)');gradient.addColorStop(.12,'rgba(155,255,211,.68)');gradient.addColorStop(.27,'rgba(58,247,159,.24)');gradient.addColorStop(.52,'rgba(30,213,126,.06)');gradient.addColorStop(.76,'rgba(14,140,95,.012)');gradient.addColorStop(1,'rgba(14,140,95,0)');
   ctx.fillStyle=gradient;ctx.fillRect(0,0,128,128);const glow=new THREE.CanvasTexture(glowCanvas);textures.push(glow);
   const nodes=coordinates.map(([lon,lat],i)=>{
     const selected=highlighted.has(i),material=new THREE.SpriteMaterial({map:glow,color:0xd8fff0,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:true});materials.push(material);
@@ -71,7 +71,7 @@ export function createNetworkGlobe(host:HTMLDivElement,land:number[][]){
   const routes=pairs.map(([a,b],i)=>{
     const start=nodes[a].sprite.position.clone().normalize(),end=nodes[b].sprite.position.clone().normalize(),angle=start.angleTo(end),path:THREE.Vector3[]=[];
     for(let j=0;j<=80;j++){const t=j/80,v=start.clone().multiplyScalar(Math.sin((1-t)*angle)).addScaledVector(end,Math.sin(t*angle)).divideScalar(Math.sin(angle));path.push(v.normalize().multiplyScalar(1.008+Math.sin(Math.PI*t)*Math.min(.065+(i%4)*.025,angle*.13)));}
-    const geometry=new THREE.BufferGeometry().setFromPoints(path);geometries.push(geometry);const selected=[0,2,5,8].includes(i),material=new THREE.LineBasicMaterial({color:selected?0xa6dec7:0x378c6b,transparent:true,opacity:selected?.36:.12,depthWrite:false});materials.push(material);earth.add(new THREE.Line(geometry,material));
+    const geometry=new THREE.BufferGeometry().setFromPoints(path);geometries.push(geometry);const selected=[0,2,5,8].includes(i),material=new THREE.LineBasicMaterial({color:selected?0xa6dec7:0x378c6b,transparent:true,opacity:selected?.39:.11,depthWrite:false});materials.push(material);earth.add(new THREE.Line(geometry,material));
     const pulseMaterial=new THREE.SpriteMaterial({map:glow,color:0xe5fff0,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false});materials.push(pulseMaterial);const pulse=new THREE.Sprite(pulseMaterial);pulse.scale.setScalar(.058);pulse.visible=false;earth.add(pulse);
     const trailMaterial=pulseMaterial.clone();materials.push(trailMaterial);const trail=new THREE.Sprite(trailMaterial);trail.scale.setScalar(.045);trail.visible=false;earth.add(trail);
     return {path,pulse,trail,trailMaterial,material:pulseMaterial,offset:i*2.85,enabled:selected||i===9};

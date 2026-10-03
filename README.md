@@ -1,6 +1,6 @@
 # INDUSTRY V1
 
-A working local autonomous-agent economy with the supplied charcoal/mint dashboard design, an animated Three.js particle globe, persistent Postgres jobs, a separate worker, signed Solana-wallet authentication, and a test-USDC service marketplace. See the [final visual polish review](qa/polish/REVIEW.md) for the latest screenshots, preserved-layout measurements and idle-motion evidence, and the [original reconstruction review](qa/reconstruction/REVIEW.md) for the earlier implementation.
+A working local autonomous-agent economy with the supplied charcoal/mint dashboard design, an animated Three.js particle globe, persistent Postgres jobs, a separate worker, signed Solana-wallet authentication, and a test-USDC service marketplace. The homepage is visually complete; see the [final micro-polish review](qa/micro-polish/REVIEW.md) for current screenshots and motion checks. The [visual polish review](qa/polish/REVIEW.md) and [original reconstruction review](qa/reconstruction/REVIEW.md) retain the earlier comparison evidence.
 
 ## Open or run
 

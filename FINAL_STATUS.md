@@ -44,6 +44,7 @@ The optimized production build is left running with the local database and separ
 | Responsive checks | No document overflow at 390, 768 and 1440px; screenshots also captured at reference width 1216px |
 | Frontend reconstruction | Three dedicated screenshot/refinement passes; motion and live service updates verified; final production globe samples at 60 FPS; no console errors |
 | Final visual polish | Initial implementation plus two refinement passes; all 13 measured regions and hero text sizes unchanged at four viewport sizes; 30-second idle motion and real feed/counter updates verified; no console errors |
+| Final micro-polish | Homepage visually complete; subtle glow/glass/surface changes only, approved geometry preserved, pressed-state priority corrected, direct browser observation and recorded 30-second motion check passed; [evidence](qa/micro-polish/REVIEW.md) |
 | Persistence and runtime | Database records survived supervisor restarts; worker heartbeat online |
 | Secret scan | No known local secrets, environment files or credential-like material in deliverable files |
 | Dependency audit | 0 critical, 0 high; 1 moderate transitive advisory documented in `SECURITY.md` |
