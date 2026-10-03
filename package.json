@@ -25,6 +25,7 @@
     "@solana/spl-token-metadata": "^0.1.6",
     "@solana/wallet-standard-features": "^1.5.0",
     "@solana/web3.js": "^1.99.0",
+    "@supabase/supabase-js": "^2.117.2",
     "@wallet-standard/app": "^1.1.1",
     "@wallet-standard/features": "^1.1.1",
     "ajv": "^8.20.0",
@@ -37,8 +38,26 @@
     "react-dom": "^19.3.0",
     "sharp": "^0.35.5",
     "three": "^0.186.1",
+    "topojson-client": "^3.1.0",
     "tweetnacl": "^1.0.3",
     "undici": "^8.11.2",
+    "world-atlas": "^2.0.2",
     "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^26.6.4",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/three": "^0.186.0",
+    "@types/topojson-client": "^3.1.5",
+    "eslint": "^10.11.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.0",
+    "vitest": "^5.0.3"
   }
 }

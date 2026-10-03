@@ -1,0 +1,7 @@
+'use client';
+import Link from 'next/link';
+import { useData,ErrorNotice,Loading,stamp } from './client';
+export function Debug(){
+  const state=useData('debug',true),health=useData('health',true);
+  return <div className="page"><div className="page-intro"><div><div className="eyebrow">RUNTIME OBSERVABILITY</div><h1>Worker & queue.</h1><p>Safe job diagnostics for {state.data?.scope||'authorized owners'}.</p></div></div><ErrorNotice error={state.error}/><div className="metric-grid"><div className="metric-box"><small>Worker</small><strong>{health.data?.worker||'Checking'}</strong></div>{state.data?.counts.map((c:any)=><div className="metric-box" key={c.status}><small>{c.status}</small><strong>{c.total}</strong></div>)}</div>{state.loading?<Loading/>:<section className="panel content-panel list-scroll section-space"><table className="dense-table"><thead><tr><th>Agent / job</th><th>Status</th><th>Attempts</th><th>Created</th><th>Safe failure summary</th></tr></thead><tbody>{state.data?.jobs.map((j:any)=><tr key={j.id}><td><Link href={'/jobs/'+j.id}>{j.agent} · {j.type}<small className="mono">{j.id.slice(0,8)}</small></Link></td><td>{j.status}</td><td>{j.attempts} / {j.max_attempts}</td><td>{stamp(j.created_at)}</td><td>{j.last_error||'—'}</td></tr>)}</tbody></table></section>}<p className="section-space muted">Lease recovery runs after 90 seconds without a heartbeat. Retries preserve the payment reservation; a terminal failure refunds it.</p></div>;
+}

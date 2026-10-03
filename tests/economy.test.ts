@@ -1,0 +1,83 @@
+import { beforeAll,afterAll,describe,it,expect } from 'vitest';
+import nacl from 'tweetnacl';
+import bs58 from 'bs58';
+import { randomUUID } from 'node:crypto';
+import { database,migrate,one,type Database } from '../packages/db/connection';
+import { Domain } from '../packages/db/domain';
+import { seed } from '../packages/db/seed';
+import { agentSchema,defaultPolicy,serviceSchema } from '../packages/core';
+import { executeRun } from '../packages/agent/runtime';
+let db:Database,domain:Domain,session:string,other:string,agent:any,service:any;
+async function login(){const pair=nacl.sign.keyPair(),wallet=bs58.encode(pair.publicKey);const c=await domain.dispatch('auth/challenge',{wallet});const signature=bs58.encode(nacl.sign.detached(new TextEncoder().encode(c.message),pair.secretKey));const r=await domain.dispatch('auth/verify',{id:c.id,wallet,signature});return {token:r.session,challenge:c,wallet,signature};}
+async function drain(){for(let i=0;i<50;i++){const c=await domain.worker('claim',{worker:'test'});if(!c)return;const r=await executeRun(c,(op,b)=>op==='services'?domain.dispatch('services/list'):domain.worker(op,b));await domain.worker('complete',{id:c.job.id,lease:c.job.lease,...r});}throw new Error('Queue did not drain');}
+beforeAll(async()=>{process.env.APP_MODE='demo';process.env.WALLET_ENCRYPTION_KEY='3'.repeat(64);delete process.env.OPENROUTER_API_KEY;delete process.env.SEARCH_PROVIDER_API_KEY;db=await database(true);await migrate(db);domain=new Domain(db);await seed(db);session=(await login()).token;other=(await login()).token;});
+afterAll(async()=>{await db?.close();});
+describe('durable Postgres economy',()=>{
+  it('runs migrations and deterministic seed, deriving network metrics',async()=>{await seed(db);const agents=await domain.dispatch('agents/list');expect(agents).toHaveLength(5);const stats=await domain.dispatch('network/stats');expect(stats.agentsOnline).toBe(5);expect(stats.totalRevenue).toBeCloseTo(264.45,2);expect(stats.series).toHaveLength(7);});
+  it('consumes wallet challenges once and rejects expiry',async()=>{const a=await login();await expect(domain.dispatch('auth/verify',{id:a.challenge.id,wallet:a.wallet,signature:a.signature})).rejects.toThrow('already used');const c=await domain.dispatch('auth/challenge',{wallet:a.wallet});await db.query("UPDATE wallet_challenges SET expires_at=now()-interval '1 second' WHERE id=$1",[c.id]);await expect(domain.dispatch('auth/verify',{id:c.id,wallet:a.wallet,signature:a.signature})).rejects.toThrow();});
+  it('creates agent, wallet, service, funding and initial job atomically and idempotently',async()=>{const input=agentSchema.parse({name:'TEST WORKER',ticker:'TEST',description:'Research and organize public technology evidence.',mission:'Research and organize public technology evidence safely.',category:'Research',tags:['Research'],jobType:'Researcher',tools:['web_search','marketplace'],tokenMode:'sandbox',initialBudget:10,policy:defaultPolicy,services:[serviceSchema.parse({name:'Test research',description:'Collect sourced evidence for a public research topic.',price:.01})]});const key=randomUUID();agent=await domain.dispatch('agents/create',{input,key},session);const again=await domain.dispatch('agents/create',{input,key},session);expect(again.id).toBe(agent.id);expect(Number((await one(db,'SELECT count(*) n FROM jobs WHERE agent_id=$1',[agent.id]))!.n)).toBe(1);const detail=await domain.dispatch('agents/get',{id:agent.id});expect(detail.agent.metrics.lifecycle).toBe('BOOTING');expect(detail.agent.metrics.revenue7d).toBe(0);service=(await domain.dispatch('services/list')).find((s:any)=>s.agent_id===agent.id);});
+  it('executes real queued work outside the UI and saves safe memory/cost',async()=>{await drain();const a=await domain.dispatch('agents/get',{id:agent.id});expect(a.agent.metrics.lifecycle).toBe('ACTIVE');expect(a.agent.metrics.jobs).toBe(1);expect(a.memories.length).toBe(1);expect(a.jobs[0].output.sources.length).toBeGreaterThan(0);expect(a.agent.metrics.cost7d).toBeGreaterThan(0);});
+  it('denies unauthenticated and non-owner mutations',async()=>{await expect(domain.dispatch('agents/pause',{id:agent.id})).rejects.toThrow('authenticate');await expect(domain.dispatch('agents/pause',{id:agent.id},other)).rejects.toThrow('creator');});
+  it('pauses and resumes durable jobs',async()=>{await domain.dispatch('agents/pause',{id:agent.id},session);await expect(domain.dispatch('agents/run',{id:agent.id,key:randomUUID()},session)).rejects.toThrow('Resume');expect((await domain.dispatch('agents/get',{id:agent.id})).agent.metrics.lifecycle).toBe('DORMANT');await domain.dispatch('agents/resume',{id:agent.id},session);const j=await domain.dispatch('agents/run',{id:agent.id,key:randomUUID()},session);await drain();expect((await domain.dispatch('jobs/get',{id:j.jobId})).status).toBe('succeeded');});
+  it('reserves, settles, and never duplicates a human purchase',async()=>{const key=randomUUID(),input={input:{topic:'Solana documentation'}};const before=(await domain.dispatch('auth/session',{},other)).profile.credits;const r=await domain.dispatch('services/request',{id:service.id,input,key},other);const repeated=await domain.dispatch('services/request',{id:service.id,input,key},other);expect(repeated.jobId).toBe(r.jobId);expect((await domain.dispatch('auth/session',{},other)).profile.credits).toBeCloseTo(before-.01,6);await drain();const j=await domain.dispatch('jobs/get',{id:r.jobId},other);expect(j.status).toBe('succeeded');expect(j.receipt.status).toBe('settled');expect(j.output.sources.length).toBeGreaterThan(0);await expect(domain.dispatch('services/request',{id:service.id,input:{input:{topic:'Changed input'}},key},other)).rejects.toThrow('different request');});
+  it('excludes same-owner purchases and becomes self-sustaining from three external jobs',async()=>{const own=await domain.dispatch('services/request',{id:service.id,input:{input:{topic:'Owner request'}},key:randomUUID()},session);await drain();expect((await domain.dispatch('jobs/get',{id:own.jobId})).status).toBe('succeeded');let a=await domain.dispatch('agents/get',{id:agent.id});expect(a.agent.metrics.externalPaidJobs).toBe(1);for(let i=0;i<2;i++)await domain.dispatch('services/request',{id:service.id,input:{input:{topic:'External request '+i}},key:randomUUID()},other);await drain();a=await domain.dispatch('agents/get',{id:agent.id});expect(a.agent.metrics.externalPaidJobs).toBe(3);expect(a.agent.metrics.lifecycle).toBe('SELF-SUSTAINING');});
+  it('enforces policy on agent purchases then records both sides and relationship',async()=>{const seller=(await domain.dispatch('services/list')).find((s:any)=>s.agent_id!==agent.id);await expect(domain.dispatch('services/request',{id:seller.id,input:{input:{topic:'Agent research'},requesterAgentId:agent.id},key:randomUUID()},session)).rejects.toThrow('hiring is disabled');const a=await domain.dispatch('agents/get',{id:agent.id});await domain.dispatch('agents/update',{id:agent.id,input:{mission:a.agent.mission,policy:{...defaultPolicy,autoHire:true}}},session);const r=await domain.dispatch('services/request',{id:seller.id,input:{input:{topic:'Agent research'},requesterAgentId:agent.id},key:randomUUID()},session);await drain();expect((await domain.dispatch('jobs/get',{id:r.jobId})).receipt.status).toBe('settled');const entries=(await db.query('SELECT * FROM ledger_entries WHERE payment_id=(SELECT payment_id FROM service_requests WHERE job_id=$1)',[r.jobId])).rows;expect(entries.map(e=>e.direction).sort()).toEqual(['credit','debit']);expect(entries[0].amount).toBe(entries[1].amount);expect((await domain.dispatch('agents/get',{id:agent.id})).relationships.length).toBeGreaterThan(0);});
+  it('fences stale worker completions and refunds a permanent failure once',async()=>{const r=await domain.dispatch('services/request',{id:service.id,input:{input:{topic:'Failure refund'}},key:randomUUID()},other);const c=await domain.worker('claim',{worker:'test'});expect(c.job.id).toBe(r.jobId);await expect(domain.worker('complete',{id:c.job.id,lease:randomUUID(),cost:0,output:{summary:'Bad'},runs:[]})).rejects.toThrow('lease');await domain.worker('fail',{id:c.job.id,lease:c.job.lease,error:'Test permanent failure',permanent:true});const j=await domain.dispatch('jobs/get',{id:r.jobId});expect(j.status).toBe('failed');expect(j.receipt.status).toBe('refunded');});
+  it('enforces RLS: public reads are allowed but financial/owner writes are denied',async()=>{await db.query('CREATE ROLE industry_test_reader');await db.query('GRANT SELECT,UPDATE ON agents TO industry_test_reader');await db.query('GRANT SELECT,INSERT ON ledger_entries TO industry_test_reader');await db.transaction(async tx=>{await tx.query('SET LOCAL ROLE industry_test_reader');expect((await tx.query('SELECT id FROM agents')).rows.length).toBeGreaterThan(0);expect((await tx.query("UPDATE agents SET name='hacked' RETURNING id")).rows).toHaveLength(0);expect((await tx.query('SELECT * FROM ledger_entries')).rows).toHaveLength(0);});});
+  it('charges incurred usage once after an abandoned lease and refunds the customer',async()=>{
+    const request=await domain.dispatch('services/request',{id:service.id,input:{input:{topic:'Interrupted provider'}},key:randomUUID()},other);
+    const first=await domain.worker('claim',{worker:'expired'});
+    expect(first.job.id).toBe(request.jobId);
+    await domain.worker('usage',{id:first.job.id,lease:first.job.lease,cost:1500,runs:[{kind:'model',provider:'test',name:'attempted-plan',cost:1500,metadata:{estimated:true}}]});
+    await db.query("UPDATE jobs SET heartbeat_at=now()-interval '2 minutes' WHERE id=$1",[first.job.id]);
+    const retry=await domain.worker('claim',{worker:'recovery'});
+    expect(retry.job.id).toBe(first.job.id);expect(retry.job.attempts).toBe(2);
+    await expect(domain.worker('fail',{id:first.job.id,lease:first.job.lease,error:'Stale failure'})).rejects.toThrow('lease');
+    await domain.worker('fail',{id:retry.job.id,lease:retry.job.lease,error:'Provider unavailable',permanent:true});
+    const entries=(await db.query("SELECT amount FROM ledger_entries WHERE job_id=$1 AND category='compute'",[first.job.id])).rows;
+    expect(entries).toHaveLength(1);expect(Number(entries[0].amount)).toBe(1500);
+    expect((await domain.dispatch('jobs/get',{id:request.jobId},other)).receipt.status).toBe('refunded');
+  });
+  it('keeps purchased memory private and handles a dependency finishing before its parent',async()=>{
+    const queued=await domain.dispatch('agents/run',{id:agent.id,key:randomUUID()},session);
+    const parent=await domain.worker('claim',{worker:'parent'});expect(parent.job.id).toBe(queued.jobId);
+    const result=await executeRun(parent,(op,b)=>op==='services'?domain.dispatch('services/list'):domain.worker(op,b));
+    expect(result.output.delegation.jobId).toBeTruthy();
+    const child=await domain.worker('claim',{worker:'child'});expect(child.job.id).toBe(result.output.delegation.jobId);
+    const answer=await executeRun(child,(op,b)=>domain.worker(op,b));
+    await domain.worker('complete',{id:child.job.id,lease:child.job.lease,...answer});
+    await domain.worker('complete',{id:parent.job.id,lease:parent.job.lease,...result});
+    expect((await domain.dispatch('jobs/get',{id:parent.job.id})).output.delegation.status).toBe('succeeded');
+    const publicView=await domain.dispatch('agents/get',{id:agent.id});
+    const ownerView=await domain.dispatch('agents/get',{id:agent.id},session);
+    expect(publicView.memories.some((m:any)=>m.memory_type==='purchased-result')).toBe(false);
+    expect(ownerView.memories.some((m:any)=>m.memory_type==='purchased-result'&&m.data.providerJobId===child.job.id)).toBe(true);
+  });
+  it('reserves model and service usage together within a parent run budget',async()=>{
+    const queued=await domain.dispatch('agents/run',{id:agent.id,key:randomUUID()},session);
+    const parent=await domain.worker('claim',{worker:'budget'});expect(parent.job.id).toBe(queued.jobId);
+    await domain.worker('usage',{id:parent.job.id,lease:parent.job.lease,cost:19500,runs:[{kind:'model',provider:'test',name:'budget-plan',cost:19500}]});
+    const seller=(await domain.dispatch('services/list')).find((s:any)=>s.agent_id!==agent.id);
+    await expect(domain.worker('purchase',{id:parent.job.id,lease:parent.job.lease,serviceId:seller.id,input:{topic:'Budget check'}})).rejects.toThrow('Run spending');
+    await domain.worker('fail',{id:parent.job.id,lease:parent.job.lease,error:'Budget exhausted',permanent:true});
+  });
+  it('scopes funding keys to the agent and enqueues interval work once',async()=>{
+    const template=(await domain.dispatch('agents/get',{id:agent.id})).agent.config;
+    const second=await domain.dispatch('agents/create',{input:{...template,name:'Budget peer',ticker:'PEER',policy:defaultPolicy,initialBudget:1,schedule:'interval',intervalMinutes:5},key:randomUUID()},session);
+    await drain();
+    const beforeFirst=(await domain.dispatch('agents/get',{id:agent.id})).agent.metrics.balance;
+    const beforeSecond=(await domain.dispatch('agents/get',{id:second.id})).agent.metrics.balance;
+    const credits=(await domain.dispatch('auth/session',{},session)).profile.credits;
+    const key=randomUUID();
+    for(const id of [agent.id,second.id,second.id])await domain.dispatch('agents/fund',{id,input:{amount:1},key},session);
+    expect((await domain.dispatch('agents/get',{id:agent.id})).agent.metrics.balance).toBeCloseTo(beforeFirst+1,6);
+    expect((await domain.dispatch('agents/get',{id:second.id})).agent.metrics.balance).toBeCloseTo(beforeSecond+1,6);
+    expect((await domain.dispatch('auth/session',{},session)).profile.credits).toBeCloseTo(credits-2,6);
+    await db.query("UPDATE agents SET next_run_at=now()-interval '1 minute' WHERE id=$1",[second.id]);
+    const claim=await domain.worker('claim',{worker:'schedule'});expect(claim.agent.id).toBe(second.id);
+    expect(await domain.worker('claim',{worker:'schedule-duplicate'})).toBeNull();
+    expect(Number((await one(db,"SELECT count(*) n FROM jobs WHERE agent_id=$1 AND trigger_type='interval'",[second.id]))!.n)).toBe(1);
+    const result=await executeRun(claim,(op,b)=>domain.worker(op,b));await domain.worker('complete',{id:claim.job.id,lease:claim.job.lease,...result});
+  });
+  it.each(['Watcher','Indexer','Verifier','Custom'])('executes the %s template',async jobType=>{const a=(await domain.dispatch('agents/get',{id:agent.id})).agent;a.job_type=jobType;a.config.jobType=jobType;a.config.policy.autoHire=false;const output=await executeRun({agent:a,job:{id:randomUUID(),lease:randomUUID(),type:'RUN',payload:{input:{topic:'Public documentation'}}},memories:[]},async()=>({config:a.config}));expect(output.output.summary).toBeTruthy();expect(output.memory.sourceUrls.length).toBeGreaterThan(0);if(jobType==='Watcher')expect(output.output.monitor.baseline).toBe(true);if(jobType==='Verifier')expect(output.output.verdict.status).toBe('needs-review');});
+});
