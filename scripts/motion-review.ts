@@ -2,7 +2,7 @@ import { mkdir,writeFile } from 'node:fs/promises';
 import sharp from 'sharp';
 import { resolve } from 'node:path';
 
-const directory='qa/reconstruction';await mkdir(directory,{recursive:true});
+const directory=process.argv[2]||'qa/reconstruction',idle=process.argv.includes('--idle');await mkdir(directory,{recursive:true});
 process.env.PLAYWRIGHT_BROWSERS_PATH=resolve('.data/playwright');
 const {chromium,expect}=await import('@playwright/test');
 const browser=await chromium.launch({channel:'msedge'});
@@ -22,7 +22,7 @@ await page.route('**/api/agents',async route=>{await new Promise(r=>setTimeout(r
 await page.goto('http://localhost:3000',{waitUntil:'domcontentloaded'});
 await expect(page.locator('.skeleton-card').first()).toBeVisible();await page.waitForTimeout(450);
 await page.screenshot({caret:'initial',path:directory+'/motion-loading.png'});
-await page.locator('.globe.is-ready').waitFor();await page.locator('.featured .agent-card h3').first().waitFor();await page.waitForTimeout(1000);await page.unroute('**/api/agents');
+await page.locator('.globe.is-ready').waitFor();await page.locator('.featured .agent-card h3').first().waitFor();await page.waitForTimeout(1000);await page.unrouteAll({behavior:'wait'});
 report.loadingSkeleton=true;report.initialSamples=await page.evaluate(()=>(window as any).__motionAudit);
 const globeFrames:Buffer[]=[];report.globe=[];
 for(let i=0;i<6;i++){
@@ -49,6 +49,19 @@ const before=await page.locator('.hero-metrics strong').allTextContents();
 await page.evaluate(()=>{(window as any).__motionAudit.length=0;});
 report.serviceRequest=await page.evaluate(async()=>{const services=await(await fetch('/api/services')).json(),service=services.find((s:any)=>s.agent_name==='SEARCH');const response=await fetch(`/api/services/${service.id}/request`,{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':crypto.randomUUID()},body:JSON.stringify({input:{topic:'Review official Solana documentation for the frontend motion verification.'}})});const receipt=await response.json();return {status:response.status,jobId:receipt.jobId};});
 expect(report.serviceRequest.status).toBe(200);
+if(idle){
+  // A genuine service job is queued above. No input, navigation, or synthetic
+  // data is sent during this 30-second observation of the existing worker/SSE.
+  const started=Date.now();report.idle=[];
+  for(let i=0;i<=6;i++){
+    await page.waitForTimeout(Math.max(0,started+i*5000-Date.now()));
+    report.idle.push(await page.evaluate(()=>({time:performance.now(),globe:{...document.querySelector<HTMLElement>('.globe-viewport')!.dataset},labels:[...document.querySelectorAll('.globe-label')].map(e=>getComputedStyle(e).transform),statusOpacity:getComputedStyle(document.querySelector('.online .live-dot')!).opacity,numbers:[...document.querySelectorAll('.hero-metrics strong')].map(e=>e.textContent),event:document.querySelector('.activity-row')?.textContent,sectionTop:document.querySelector('.activity-panel')!.getBoundingClientRect().top})));
+    await page.screenshot({caret:'initial',path:directory+`/idle-${i*5}s.png`});
+  }
+  report.idleDurationMs=Date.now()-started;
+  const idleImages=await Promise.all([0,10,20,30].map(seconds=>sharp(directory+`/idle-${seconds}s.png`).extract({left:695,top:60,width:710,height:465}).resize(710,465).toBuffer()));
+  await sharp({create:{width:1420,height:930,channels:4,background:'#060809'}}).composite(idleImages.map((input,i)=>({input,left:(i%2)*710,top:Math.floor(i/2)*465}))).png().toFile(directory+'/idle-globe-sequence.png');
+}
 await expect(page.locator('.hero-metrics strong').nth(2)).not.toHaveText(before[2],{timeout:25000});await page.waitForTimeout(1300);
 report.liveBefore=before;report.liveAfter=await page.locator('.hero-metrics strong').allTextContents();report.liveSamples=await page.evaluate(()=>(window as any).__motionAudit);
 report.liveCounterAnimation=report.liveSamples.some((s:any)=>s.animating>0);report.liveRowAnimation=report.liveSamples.some((s:any)=>s.rows.some((r:any)=>Number(r.opacity)<.98));
@@ -59,3 +72,4 @@ const reducedStart=await page.locator('.globe-viewport').getAttribute('data-rota
 report.errors=errors;await writeFile(directory+'/motion-review.json',JSON.stringify(report,null,2));
 const video=page.video()!;await context.close();await video.saveAs(directory+'/motion-review.webm');await browser.close();
 console.log(JSON.stringify({...report,initialSamples:`${report.initialSamples.length} captured frames`,liveSamples:`${report.liveSamples.length} captured frames`},null,2));expect(errors).toEqual([]);expect(report.liveCounterAnimation).toBe(true);expect(report.liveRowAnimation).toBe(true);
+if(idle){expect(report.idleDurationMs).toBeGreaterThanOrEqual(30000);expect(new Set(report.idle.map((s:any)=>s.event)).size).toBeGreaterThan(1);expect(new Set(report.idle.map((s:any)=>s.globe.nodeGlow)).size).toBeGreaterThan(1);expect(new Set(report.idle.map((s:any)=>s.statusOpacity)).size).toBeGreaterThan(1);expect(new Set(report.idle.map((s:any)=>s.sectionTop)).size).toBe(1);}

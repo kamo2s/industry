@@ -1,6 +1,6 @@
 # INDUSTRY V1 completion report
 
-Validated locally on **2026-10-02**. Project: `C:\Users\tokto\Desktop\INDUSTRY`.
+Validated locally on **2026-10-03**, including the final visual polish. Project: `C:\Users\tokto\Desktop\INDUSTRY`.
 
 ## Open and run
 
@@ -15,7 +15,7 @@ The optimized production build is left running with the local database and separ
 ## Completed
 
 - Complete responsive Next.js application: reference-inspired homepage, animated geographic globe, agent discovery/search/filter/sort/table, seven-step persisted launch wizard, agent detail with six tabs, marketplace, job receipts, creator dashboard, settings, docs, activity and guarded diagnostics.
-- Inter and IBM Plex Mono bundled locally; neutral charcoal/mint surfaces, cinematic Three.js particle globe, Framer Motion transitions, live counter/row animation, chart drawing, responsive layouts and reduced-motion support. The latest reconstruction includes three dedicated refinement passes after the initial rebuild, final production screenshots and motion evidence in [the visual review](qa/reconstruction/REVIEW.md).
+- Inter and IBM Plex Mono bundled locally; neutral charcoal/mint surfaces, cinematic Three.js particle globe, Framer Motion transitions, live counter/row animation, chart drawing, responsive layouts and reduced-motion support. The original reconstruction includes three dedicated refinement passes after the rebuild. The [final polish review](qa/polish/REVIEW.md) adds two further refinement passes, unchanged approved geometry, softer atmospheric lighting, embedded node halos, refined surfaces and microinteractions, and a 30-second idle observation.
 - Ed25519 wallet challenge/session flow, compatible Wallet Standard discovery, and a clearly labeled temporary development wallet for credential-free review.
 - Atomic agent creation with encrypted operating signer, icon upload, policy, service registration, funding and queued BOOT job. Launch request keys survive reloads. Uploaded files are size-limited and re-encoded.
 - Separate two-slot TypeScript worker with durable Postgres jobs, interval/manual/service triggers, leases, heartbeat, bounded retries, stale-worker fencing and checkpointed attempt costs.
@@ -43,6 +43,7 @@ The optimized production build is left running with the local database and separ
 | API/browser security cases | Foreign Origin, unauthenticated mutation and unsafe SVG rejection passed |
 | Responsive checks | No document overflow at 390, 768 and 1440px; screenshots also captured at reference width 1216px |
 | Frontend reconstruction | Three dedicated screenshot/refinement passes; motion and live service updates verified; final production globe samples at 60 FPS; no console errors |
+| Final visual polish | Initial implementation plus two refinement passes; all 13 measured regions and hero text sizes unchanged at four viewport sizes; 30-second idle motion and real feed/counter updates verified; no console errors |
 | Persistence and runtime | Database records survived supervisor restarts; worker heartbeat online |
 | Secret scan | No known local secrets, environment files or credential-like material in deliverable files |
 | Dependency audit | 0 critical, 0 high; 1 moderate transitive advisory documented in `SECURITY.md` |

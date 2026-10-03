@@ -12,20 +12,25 @@ export function createNetworkGlobe(host:HTMLDivElement,land:number[][]){
   const geometries:THREE.BufferGeometry[]=[],materials:THREE.Material[]=[],textures:THREE.Texture[]=[];
   const radians=Math.PI/180;
   function location(lon:number,lat:number,r=1){const p=lat*radians,l=lon*radians;return new THREE.Vector3(Math.cos(p)*Math.sin(l),Math.sin(p),Math.cos(p)*Math.cos(l)).multiplyScalar(r);}
-  const uniforms={uTime:{value:0},uDpr:{value:renderer.getPixelRatio()},uReduced:{value:reduced.matches?1:0}};
+  const coordinates=[[-14,8],[8,14],[36,15],[54,1],[3,5],[31,6],[101,3],[-49,-17],[-74,41]];
+  const highlighted=new Set([0,1,2,5]);
+  const uniforms={uTime:{value:0},uDpr:{value:renderer.getPixelRatio()},uReduced:{value:reduced.matches?1:0},uNodes:{value:[0,1,2,5].map(i=>location(...coordinates[i] as [number,number]))}};
   const pointMaterial=new THREE.ShaderMaterial({uniforms,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
-    vertexShader:`uniform float uTime; uniform float uDpr; uniform float uReduced;
+    vertexShader:`uniform float uTime; uniform float uDpr; uniform float uReduced; uniform vec3 uNodes[4];
       attribute float aSeed; attribute float aLand; varying float vAlpha; varying float vSeed;
       void main(){vec4 view=modelViewMatrix*vec4(position,1.0);vec3 normal=normalize(normalMatrix*position);
-        float facing=dot(normal,normalize(-view.xyz));float front=smoothstep(-0.06,0.6,facing);
-        float light=0.32+0.68*max(0.0,dot(normal,normalize(vec3(-0.4,0.65,1.0))));
-        float shimmer=0.89+0.11*sin(aSeed*90.0+uTime*0.55*(1.0-uReduced));
-        vAlpha=mix(0.055,0.7,aLand)*front*light*shimmer*(0.18+pow(aSeed,1.5)*1.15);vSeed=aSeed;
-        gl_PointSize=uDpr*mix(1.2,1.8,aLand)*(0.7+aSeed*0.5)*clamp(2.5/-view.z,0.65,1.35);gl_Position=projectionMatrix*view;}`,
+        float facing=dot(normal,normalize(-view.xyz));
+        float front=smoothstep(-0.02,0.28,facing)*(0.15+0.85*pow(max(facing,0.0),1.4));
+        float light=0.25+0.75*max(0.0,dot(normal,normalize(vec3(-0.3,0.45,1.0))));
+        float depth=0.6+0.4*(1.0-smoothstep(2.1,3.5,-view.z));
+        float localLight=0.0;for(int i=0;i<4;i++){vec3 d=normalize(position)-uNodes[i];localLight+=exp(-dot(d,d)*95.0);}
+        float shimmer=0.93+0.07*sin(aSeed*90.0+uTime*0.48*(1.0-uReduced));
+        vAlpha=(mix(0.085,0.91,aLand)*light*depth*(0.16+pow(aSeed,1.35)*1.2)+localLight*0.34*aLand)*front*shimmer;vSeed=aSeed;
+        gl_PointSize=uDpr*mix(1.2,1.9,aLand)*(0.7+aSeed*0.5)*clamp(2.5/-view.z,0.65,1.35);gl_Position=projectionMatrix*view;}`,
     fragmentShader:`varying float vAlpha; varying float vSeed;
       void main(){float distance=length(gl_PointCoord-0.5);float dotShape=1.0-smoothstep(0.19,0.5,distance);
-        vec3 green=mix(vec3(0.06,0.53,0.39),vec3(0.37,0.86,0.65),vSeed);
-        if(vSeed>0.97)green=mix(green,vec3(0.71,0.96,0.88),0.65);gl_FragColor=vec4(green,vAlpha*dotShape);}`
+        vec3 green=mix(vec3(0.055,0.43,0.32),vec3(0.45,0.85,0.69),vSeed);
+        if(vSeed>0.95)green=mix(green,vec3(0.79,0.97,0.89),0.6);gl_FragColor=vec4(green,vAlpha*dotShape);}`
   });materials.push(pointMaterial);
   const positions:number[]=[],seeds:number[]=[],kinds:number[]=[];
   land.forEach(([lon,lat],i)=>{if(constrained&&i%2)return;const noise=Math.sin(i*127.1)*43758.5453,seed=noise-Math.floor(noise);positions.push(...location(lon+(seed-.5)*.34,lat+Math.sin(i*3.71)*.16,1.003).toArray());seeds.push(seed);kinds.push(1);});
@@ -33,25 +38,45 @@ export function createNetworkGlobe(host:HTMLDivElement,land:number[][]){
   const particles=new THREE.BufferGeometry();geometries.push(particles);
   particles.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));particles.setAttribute('aSeed',new THREE.Float32BufferAttribute(seeds,1));particles.setAttribute('aLand',new THREE.Float32BufferAttribute(kinds,1));earth.add(new THREE.Points(particles,pointMaterial));
   const sphereGeometry=new THREE.SphereGeometry(.995,64,48);geometries.push(sphereGeometry);
-  const bodyMaterial=new THREE.ShaderMaterial({
-    vertexShader:'varying vec3 vNormal; varying vec3 vPosition; void main(){vNormal=normalize(normalMatrix*normal);vec4 p=modelViewMatrix*vec4(position,1.0);vPosition=p.xyz;gl_Position=projectionMatrix*p;}',
-    fragmentShader:'varying vec3 vNormal;varying vec3 vPosition;void main(){float rim=pow(1.0-max(dot(vNormal,normalize(-vPosition)),0.0),3.0);float light=max(dot(vNormal,normalize(vec3(-.5,.6,1.))),0.);gl_FragColor=vec4(vec3(.009,.016,.015)+vec3(.005,.018,.015)*rim+vec3(.001,.004,.003)*light,1.0);}'
+  const bodyMaterial=new THREE.ShaderMaterial({uniforms,
+    vertexShader:'varying vec3 vNormal; varying vec3 vPosition; varying vec3 vSurface; void main(){vSurface=normalize(position);vNormal=normalize(normalMatrix*normal);vec4 p=modelViewMatrix*vec4(position,1.0);vPosition=p.xyz;gl_Position=projectionMatrix*p;}',
+    fragmentShader:`uniform vec3 uNodes[4];varying vec3 vNormal;varying vec3 vPosition;varying vec3 vSurface;
+      void main(){vec3 normal=normalize(vNormal);float facing=max(dot(normal,normalize(-vPosition)),0.0);float rim=pow(1.0-facing,2.7);
+        float light=max(dot(normal,normalize(vec3(-.65,.35,1.))),0.);float spill=0.0;
+        for(int i=0;i<4;i++){vec3 d=normalize(vSurface)-uNodes[i];spill+=exp(-dot(d,d)*65.0);}
+        vec3 color=vec3(.01,.017,.019)+vec3(.002,.033,.022)*rim*light+vec3(.003,.018,.012)*spill;
+        gl_FragColor=vec4(color,1.0);}`
   });materials.push(bodyMaterial);earth.add(new THREE.Mesh(sphereGeometry,bodyMaterial));
+  // A geometric, directionally lit atmosphere follows the sphere, not the DOM.
+  const atmosphereGeometry=new THREE.SphereGeometry(1.018,48,32);geometries.push(atmosphereGeometry);
+  const atmosphereMaterial=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+    uniforms:{uStrength:{value:constrained?.085:.14}},
+    vertexShader:'varying vec3 vNormal;varying vec3 vPosition;void main(){vNormal=normalize(normalMatrix*normal);vec4 p=modelViewMatrix*vec4(position,1.);vPosition=p.xyz;gl_Position=projectionMatrix*p;}',
+    fragmentShader:`uniform float uStrength;varying vec3 vNormal;varying vec3 vPosition;
+      void main(){vec3 n=normalize(vNormal);float facing=abs(dot(n,normalize(-vPosition)));float rim=pow(1.0-facing,2.2)*smoothstep(0.0,.33,facing);
+        float light=.22+.78*max(dot(n,normalize(vec3(-.8,.1,1.))),0.);gl_FragColor=vec4(.06,.48,.32,rim*light*uStrength);}`
+  });materials.push(atmosphereMaterial);earth.add(new THREE.Mesh(atmosphereGeometry,atmosphereMaterial));
   // Broad additive falloff blooms bright nodes without glowing every surface dot.
   const glowCanvas=document.createElement('canvas');glowCanvas.width=128;glowCanvas.height=128;
   const ctx=glowCanvas.getContext('2d')!,gradient=ctx.createRadialGradient(64,64,0,64,64,64);
-  gradient.addColorStop(0,'rgba(215,255,234,1)');gradient.addColorStop(.07,'rgba(148,255,212,.98)');gradient.addColorStop(.19,'rgba(54,250,160,.52)');gradient.addColorStop(.42,'rgba(30,213,126,.14)');gradient.addColorStop(1,'rgba(14,140,95,0)');
+  gradient.addColorStop(0,'rgba(246,255,251,1)');gradient.addColorStop(.035,'rgba(232,255,247,1)');gradient.addColorStop(.09,'rgba(155,255,211,.98)');gradient.addColorStop(.24,'rgba(58,247,159,.4)');gradient.addColorStop(.5,'rgba(30,213,126,.085)');gradient.addColorStop(1,'rgba(14,140,95,0)');
   ctx.fillStyle=gradient;ctx.fillRect(0,0,128,128);const glow=new THREE.CanvasTexture(glowCanvas);textures.push(glow);
-  const coordinates=[[-14,8],[8,14],[36,15],[54,1],[3,5],[31,6],[101,3],[-49,-17],[-74,41]];
-  const nodes=coordinates.map(([lon,lat],i)=>{const material=new THREE.SpriteMaterial({map:glow,color:0xb3ffe2,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:true});materials.push(material);const sprite=new THREE.Sprite(material);sprite.position.copy(location(lon,lat,1.015));sprite.scale.setScalar(.17);earth.add(sprite);return {sprite,material,phase:i*.86};});
+  const nodes=coordinates.map(([lon,lat],i)=>{
+    const selected=highlighted.has(i),material=new THREE.SpriteMaterial({map:glow,color:0xd8fff0,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:true});materials.push(material);
+    const sprite=new THREE.Sprite(material);sprite.position.copy(location(lon,lat,1.014));earth.add(sprite);
+    const haloMaterial=material.clone();materials.push(haloMaterial);const halo=new THREE.Sprite(haloMaterial);halo.position.copy(sprite.position);halo.scale.setScalar(selected?.29:.17);earth.add(halo);
+    return {sprite,material,halo,haloMaterial,selected,phase:i*.86};
+  });
   const pairs=[[0,1],[0,4],[1,2],[1,4],[2,3],[2,5],[3,4],[3,6],[4,5],[4,7],[0,8],[5,6]];
   const routes=pairs.map(([a,b],i)=>{
     const start=nodes[a].sprite.position.clone().normalize(),end=nodes[b].sprite.position.clone().normalize(),angle=start.angleTo(end),path:THREE.Vector3[]=[];
-    for(let j=0;j<=80;j++){const t=j/80,v=start.clone().multiplyScalar(Math.sin((1-t)*angle)).addScaledVector(end,Math.sin(t*angle)).divideScalar(Math.sin(angle));path.push(v.normalize().multiplyScalar(1.008+Math.sin(Math.PI*t)*Math.min(.16,angle*.13)));}
-    const geometry=new THREE.BufferGeometry().setFromPoints(path);geometries.push(geometry);const material=new THREE.LineBasicMaterial({color:i%4===0?0x73d1b3:0x2f9e77,transparent:true,opacity:i%3===0?.23:.13,depthWrite:false});materials.push(material);earth.add(new THREE.Line(geometry,material));
-    const pulseMaterial=new THREE.SpriteMaterial({map:glow,color:0xc5ffe5,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false});materials.push(pulseMaterial);const pulse=new THREE.Sprite(pulseMaterial);pulse.scale.setScalar(.065);pulse.visible=false;earth.add(pulse);return {path,pulse,material:pulseMaterial,offset:i*2.13};
+    for(let j=0;j<=80;j++){const t=j/80,v=start.clone().multiplyScalar(Math.sin((1-t)*angle)).addScaledVector(end,Math.sin(t*angle)).divideScalar(Math.sin(angle));path.push(v.normalize().multiplyScalar(1.008+Math.sin(Math.PI*t)*Math.min(.065+(i%4)*.025,angle*.13)));}
+    const geometry=new THREE.BufferGeometry().setFromPoints(path);geometries.push(geometry);const selected=[0,2,5,8].includes(i),material=new THREE.LineBasicMaterial({color:selected?0xa6dec7:0x378c6b,transparent:true,opacity:selected?.36:.12,depthWrite:false});materials.push(material);earth.add(new THREE.Line(geometry,material));
+    const pulseMaterial=new THREE.SpriteMaterial({map:glow,color:0xe5fff0,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false});materials.push(pulseMaterial);const pulse=new THREE.Sprite(pulseMaterial);pulse.scale.setScalar(.058);pulse.visible=false;earth.add(pulse);
+    const trailMaterial=pulseMaterial.clone();materials.push(trailMaterial);const trail=new THREE.Sprite(trailMaterial);trail.scale.setScalar(.045);trail.visible=false;earth.add(trail);
+    return {path,pulse,trail,trailMaterial,material:pulseMaterial,offset:i*2.85,enabled:selected||i===9};
   });
-  for(let ring=0;ring<2;ring++){const points=Array.from({length:181},(_,i)=>new THREE.Vector3(Math.cos(i*Math.PI/90)*1.18,0,Math.sin(i*Math.PI/90)*1.18));const geometry=new THREE.BufferGeometry().setFromPoints(points);geometries.push(geometry);const material=new THREE.LineBasicMaterial({color:0x1d7255,transparent:true,opacity:.075,depthWrite:false});materials.push(material);const line=new THREE.Line(geometry,material);line.rotation.set(ring?.5:-.42,0,ring?.25:-.15);earth.add(line);}
+  for(let ring=0;ring<2;ring++){const points=Array.from({length:181},(_,i)=>new THREE.Vector3(Math.cos(i*Math.PI/90)*1.18,0,Math.sin(i*Math.PI/90)*1.18));const geometry=new THREE.BufferGeometry().setFromPoints(points);geometries.push(geometry);const material=new THREE.LineBasicMaterial({color:0x1d7255,transparent:true,opacity:.025,depthWrite:false});materials.push(material);const line=new THREE.Line(geometry,material);line.rotation.set(ring?.5:-.42,0,ring?.25:-.15);earth.add(line);}
   let visible=true,dirty=true,elapsed=0,last=0,frameBudget=0,frames=0,windowStart=0,diagnosticTime=0;
   const world=new THREE.Vector3(),look=new THREE.Vector3(),normal=new THREE.Vector3();
   const resize=()=>{const w=host.clientWidth,h=host.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.position.set(0,0,w<500?3.9:3.05);camera.updateProjectionMatrix();dirty=true;};
@@ -64,10 +89,10 @@ export function createNetworkGlobe(host:HTMLDivElement,land:number[][]){
     // Keep the GPU near 60 FPS even on high-refresh monitors; motion uses elapsed time.
     if(!reduced.matches){elapsed+=dt;frameBudget+=dt;if(frameBudget<1/60&&!dirty)return;frameBudget%=1/60;}
     earth.rotation.y=-.43+elapsed*.006;uniforms.uTime.value=elapsed;earth.updateMatrixWorld(true);let pulses=0;
-    nodes.forEach(({sprite,material,phase})=>{sprite.getWorldPosition(world);look.copy(camera.position).sub(world).normalize();const facing=normal.copy(world).normalize().dot(look);material.opacity=THREE.MathUtils.smoothstep(facing,.01,.32)*(.8+Math.sin(elapsed*.85+phase)*.12);sprite.scale.setScalar(.16+(reduced.matches?0:Math.sin(elapsed*.85+phase)*.012));});
-    routes.forEach(route=>{const phase=(elapsed+route.offset)%19,progress=phase/2.6;route.pulse.visible=!reduced.matches&&progress<1;if(route.pulse.visible){const index=progress*80,low=Math.floor(index);route.pulse.position.copy(route.path[low]).lerp(route.path[Math.min(80,low+1)],index-low);route.material.opacity=Math.sin(progress*Math.PI)*.85;pulses++;}});
+    nodes.forEach(({sprite,material,halo,haloMaterial,selected,phase})=>{sprite.getWorldPosition(world);look.copy(camera.position).sub(world).normalize();const facing=normal.copy(world).normalize().dot(look),breath=reduced.matches?0:Math.sin(elapsed*.72+phase),visibility=THREE.MathUtils.smoothstep(facing,.01,.4);material.opacity=visibility*(selected?.92:.38)*(1+breath*.12);sprite.scale.setScalar((selected?.135:.1)+breath*.007);haloMaterial.opacity=visibility*(selected?.16:.04)*(constrained?.65:1)*(1+breath*.18);halo.scale.setScalar((selected?.29:.17)+breath*.012);});
+    routes.forEach(route=>{const phase=(elapsed+route.offset)%17.5,progress=phase/3.1;route.pulse.visible=!reduced.matches&&route.enabled&&progress<1;route.trail.visible=route.pulse.visible&&progress>.035;if(route.pulse.visible){const index=progress*80,low=Math.floor(index);route.pulse.position.copy(route.path[low]).lerp(route.path[Math.min(80,low+1)],index-low);route.material.opacity=Math.sin(progress*Math.PI)*.95;if(route.trail.visible){const tail=Math.max(0,index-2.3),t=Math.floor(tail);route.trail.position.copy(route.path[t]).lerp(route.path[Math.min(80,t+1)],tail-t);route.trailMaterial.opacity=route.material.opacity*.24;}route.pulse.getWorldPosition(world);look.copy(camera.position).sub(world).normalize();if(normal.copy(world).normalize().dot(look)>.1)pulses++;}});
     renderer.render(scene,camera);dirty=false;frames++;
-    if(now-diagnosticTime>1000){host.dataset.rotation=earth.rotation.y.toFixed(5);host.dataset.pulses=String(pulses);host.dataset.fps=String(Math.round(frames*1000/Math.max(1,now-windowStart)));frames=0;windowStart=now;diagnosticTime=now;}
+    if(now-diagnosticTime>1000){host.dataset.rotation=earth.rotation.y.toFixed(5);host.dataset.pulses=String(pulses);host.dataset.nodeGlow=nodes[1].material.opacity.toFixed(3);host.dataset.fps=String(Math.round(frames*1000/Math.max(1,now-windowStart)));frames=0;windowStart=now;diagnosticTime=now;}
   });
   return()=>{renderer.setAnimationLoop(null);observer.disconnect();intersection.disconnect();reduced.removeEventListener('change',preference);geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());textures.forEach(t=>t.dispose());renderer.dispose();renderer.domElement.remove();};
 }

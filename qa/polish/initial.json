@@ -1,0 +1,446 @@
+{
+  "measurements": [
+    {
+      "name": "desktop",
+      "viewport": 1440,
+      "zoom": 1,
+      "dpr": 1,
+      "overflow": false,
+      "layout": {
+        ".header": {
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 60
+        },
+        ".home": {
+          "x": 0,
+          "y": 60,
+          "width": 1440,
+          "height": 1418.65625
+        },
+        ".hero": {
+          "x": 36,
+          "y": 60,
+          "width": 1368,
+          "height": 468
+        },
+        ".hero-copy": {
+          "x": 36,
+          "y": 60,
+          "width": 656.625,
+          "height": 468
+        },
+        ".globe": {
+          "x": 692.625,
+          "y": 60,
+          "width": 711.359375,
+          "height": 468
+        },
+        ".activity-panel": {
+          "x": 36,
+          "y": 528,
+          "width": 1017,
+          "height": 308
+        },
+        ".statement": {
+          "x": 1065,
+          "y": 528,
+          "width": 339,
+          "height": 308
+        },
+        ".featured": {
+          "x": 36,
+          "y": 850,
+          "width": 1368,
+          "height": 359.28125
+        },
+        ".featured .agent-card": {
+          "x": 50,
+          "y": 905,
+          "width": 258.390625,
+          "height": 289.28125
+        },
+        ".network-stats": {
+          "x": 36,
+          "y": 1223.28125,
+          "width": 704,
+          "height": 255.375
+        },
+        ".top-earners": {
+          "x": 752,
+          "y": 1223.28125,
+          "width": 320,
+          "height": 255.375
+        },
+        ".get-started": {
+          "x": 1084,
+          "y": 1223.28125,
+          "width": 320,
+          "height": 255.375
+        },
+        ".footer": {
+          "x": 0,
+          "y": 1478.65625,
+          "width": 1440,
+          "height": 86
+        }
+      },
+      "type": {
+        ".hero h1": {
+          "fontSize": "64px",
+          "lineHeight": "65.28px"
+        },
+        ".hero-copy>p": {
+          "fontSize": "20px",
+          "lineHeight": "29.6px"
+        },
+        ".hero-actions .button": {
+          "fontSize": "14px",
+          "lineHeight": "21px"
+        },
+        ".hero-metrics strong": {
+          "fontSize": "27px",
+          "lineHeight": "32.4px"
+        }
+      },
+      "globe": {
+        "renderer": "three-webgl",
+        "particles": "36318",
+        "rotation": "-0.43000",
+        "pulses": "0",
+        "nodeGlow": "0.920",
+        "fps": "2"
+      }
+    },
+    {
+      "name": "reference",
+      "viewport": 1216,
+      "zoom": 1,
+      "dpr": 1,
+      "overflow": false,
+      "layout": {
+        ".header": {
+          "x": 0,
+          "y": 0,
+          "width": 1216,
+          "height": 50
+        },
+        ".home": {
+          "x": 0,
+          "y": 50,
+          "width": 1216,
+          "height": 1192.078125
+        },
+        ".hero": {
+          "x": 30,
+          "y": 50,
+          "width": 1156,
+          "height": 393
+        },
+        ".hero-copy": {
+          "x": 30,
+          "y": 50,
+          "width": 554.875,
+          "height": 393
+        },
+        ".globe": {
+          "x": 584.875,
+          "y": 50,
+          "width": 601.109375,
+          "height": 393
+        },
+        ".activity-panel": {
+          "x": 30,
+          "y": 443,
+          "width": 859.5,
+          "height": 262
+        },
+        ".statement": {
+          "x": 899.5,
+          "y": 443,
+          "width": 286.5,
+          "height": 262
+        },
+        ".featured": {
+          "x": 30,
+          "y": 717,
+          "width": 1156,
+          "height": 302.578125
+        },
+        ".featured .agent-card": {
+          "x": 42,
+          "y": 760.5,
+          "width": 218.390625,
+          "height": 246.078125
+        },
+        ".network-stats": {
+          "x": 30,
+          "y": 1031.578125,
+          "width": 595.046875,
+          "height": 210.5
+        },
+        ".top-earners": {
+          "x": 635.046875,
+          "y": 1031.578125,
+          "width": 270.46875,
+          "height": 210.5
+        },
+        ".get-started": {
+          "x": 915.515625,
+          "y": 1031.578125,
+          "width": 270.484375,
+          "height": 210.5
+        },
+        ".footer": {
+          "x": 0,
+          "y": 1242.078125,
+          "width": 1216,
+          "height": 76.5
+        }
+      },
+      "type": {
+        ".hero h1": {
+          "fontSize": "54px",
+          "lineHeight": "55.08px"
+        },
+        ".hero-copy>p": {
+          "fontSize": "17px",
+          "lineHeight": "24.82px"
+        },
+        ".hero-actions .button": {
+          "fontSize": "13px",
+          "lineHeight": "19.5px"
+        },
+        ".hero-metrics strong": {
+          "fontSize": "24px",
+          "lineHeight": "28.8px"
+        }
+      },
+      "globe": {
+        "renderer": "three-webgl",
+        "particles": "36318"
+      }
+    },
+    {
+      "name": "tablet",
+      "viewport": 768,
+      "zoom": 1,
+      "dpr": 1,
+      "overflow": false,
+      "layout": {
+        ".header": {
+          "x": 0,
+          "y": 0,
+          "width": 768,
+          "height": 65
+        },
+        ".home": {
+          "x": 0,
+          "y": 65,
+          "width": 768,
+          "height": 1613.171875
+        },
+        ".hero": {
+          "x": 26,
+          "y": 65,
+          "width": 716,
+          "height": 485
+        },
+        ".hero-copy": {
+          "x": 26,
+          "y": 65,
+          "width": 350.828125,
+          "height": 485
+        },
+        ".globe": {
+          "x": 376.828125,
+          "y": 65,
+          "width": 365.15625,
+          "height": 430
+        },
+        ".activity-panel": {
+          "x": 26,
+          "y": 550,
+          "width": 504.28125,
+          "height": 327.4375
+        },
+        ".statement": {
+          "x": 540.28125,
+          "y": 550,
+          "width": 201.703125,
+          "height": 327.4375
+        },
+        ".featured": {
+          "x": 26,
+          "y": 891.4375,
+          "width": 716,
+          "height": 352.546875
+        },
+        ".featured .agent-card": {
+          "x": 40,
+          "y": 945.4375,
+          "width": 220.65625,
+          "height": 276.546875
+        },
+        ".network-stats": {
+          "x": 26,
+          "y": 1257.984375,
+          "width": 452.5625,
+          "height": 260.5
+        },
+        ".top-earners": {
+          "x": 490.5625,
+          "y": 1257.984375,
+          "width": 251.421875,
+          "height": 260.5
+        },
+        ".get-started": {
+          "x": 26,
+          "y": 1530.484375,
+          "width": 715.984375,
+          "height": 147.6875
+        },
+        ".footer": {
+          "x": 0,
+          "y": 1678.171875,
+          "width": 768,
+          "height": 99
+        }
+      },
+      "type": {
+        ".hero h1": {
+          "fontSize": "40px",
+          "lineHeight": "42.8px"
+        },
+        ".hero-copy>p": {
+          "fontSize": "16px",
+          "lineHeight": "24px"
+        },
+        ".hero-actions .button": {
+          "fontSize": "12px",
+          "lineHeight": "18px"
+        },
+        ".hero-metrics strong": {
+          "fontSize": "23px",
+          "lineHeight": "27.6px"
+        }
+      },
+      "globe": {
+        "renderer": "three-webgl",
+        "particles": "18932"
+      }
+    },
+    {
+      "name": "mobile",
+      "viewport": 390,
+      "zoom": 1,
+      "dpr": 1,
+      "overflow": false,
+      "layout": {
+        ".header": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 70
+        },
+        ".home": {
+          "x": 0,
+          "y": 70,
+          "width": 390,
+          "height": 2780.8125
+        },
+        ".hero": {
+          "x": 17,
+          "y": 70,
+          "width": 356,
+          "height": 822.5
+        },
+        ".hero-copy": {
+          "x": 17,
+          "y": 70,
+          "width": 356,
+          "height": 453.5
+        },
+        ".globe": {
+          "x": 17,
+          "y": 540.5,
+          "width": 356,
+          "height": 342
+        },
+        ".activity-panel": {
+          "x": 17,
+          "y": 892.5,
+          "width": 356,
+          "height": 518
+        },
+        ".statement": {
+          "x": 17,
+          "y": 1423.5,
+          "width": 356,
+          "height": 224
+        },
+        ".featured": {
+          "x": 17,
+          "y": 1662.5,
+          "width": 356,
+          "height": 359
+        },
+        ".featured .agent-card": {
+          "x": 29,
+          "y": 1716.5,
+          "width": 245,
+          "height": 285
+        },
+        ".network-stats": {
+          "x": 17,
+          "y": 2036.5,
+          "width": 356,
+          "height": 230
+        },
+        ".top-earners": {
+          "x": 17,
+          "y": 2280.5,
+          "width": 356,
+          "height": 254
+        },
+        ".get-started": {
+          "x": 17,
+          "y": 2548.5,
+          "width": 356,
+          "height": 302.3125
+        },
+        ".footer": {
+          "x": 0,
+          "y": 2850.8125,
+          "width": 390,
+          "height": 149
+        }
+      },
+      "type": {
+        ".hero h1": {
+          "fontSize": "39.78px",
+          "lineHeight": "44.5536px"
+        },
+        ".hero-copy>p": {
+          "fontSize": "16px",
+          "lineHeight": "24.32px"
+        },
+        ".hero-actions .button": {
+          "fontSize": "12px",
+          "lineHeight": "18px"
+        },
+        ".hero-metrics strong": {
+          "fontSize": "27px",
+          "lineHeight": "32.4px"
+        }
+      },
+      "globe": {
+        "renderer": "three-webgl",
+        "particles": "18932"
+      }
+    }
+  ],
+  "geometryChanges": [],
+  "errors": []
+}
