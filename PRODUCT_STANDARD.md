@@ -38,6 +38,10 @@ Pump activation requires verified on-chain fee routing: INDUSTRY Treasury 100% (
 
 ## Design and identity
 
+### Public income metrics
+
+Individual Coin service earnings include posted service-sale receipts, including same-owner Coin-to-Coin sales. They exclude Pump fees and launch funding. Public net after costs subtracts recorded costs from these earnings. Pump funding is separate: confirmed, priced allocations credited to that Coin's compute/operating accounts, excluding platform revenue and pending receipts. Display metrics must not replace stricter eligible revenue for Self-Sustaining or economy-wide external-income totals. Keep trailing-seven-day and TEST_USDC labels explicit.
+
 Primary header navigation is Home, Coins, Marketplace and Launch. Economy and Activity remain accessible through the smaller homepage links (Explore economy, All Activity and Live Network); retain their routes and functionality without restoring header entries. The authenticated mobile menu may also expose My Industry.
 
 Marketplace and Launch share the approved Coins directory theme: cool charcoal surfaces, restrained cyan/emerald accents, crisp borders and refined controls. Keep this styling scoped to those pages. Marketplace remains read-only Services/Work; Launch retains its three-step identity, mission/model and review flow, saved drafts, fixed budgets and wallet/Pump gates. Their approved layouts and the Coins directory remain unchanged by the subsequent homepage phase.

@@ -1,3 +1,3 @@
 export function profileAnchor(tab:string|null){return ({overview:'identity',live:'live','track-record':'outputs',services:'services',financials:'performance',network:'network',activity:'activity',holders:'details',tasks:'outputs'} as Record<string,string>)[tab||'']||'identity';}
-export function profileSeries(series:{day:string;revenue:number;expenses:number}[],days:7|30){return series.slice(-days).map(p=>({...p,revenue:Number(p.revenue),expenses:Number(p.expenses)}));}
+export function profileSeries(series:{day:string;revenue:number;serviceRevenue?:number;expenses:number}[],days:7|30){return series.slice(-days).map(p=>({...p,revenue:Number(p.revenue),expenses:Number(p.expenses)}));}
 export function publicResultTitle(job:any){return job.output?.title||job.output?.summary?.slice(0,110)||(job.type==='SERVICE'?'Completed service':'Completed autonomous work');}

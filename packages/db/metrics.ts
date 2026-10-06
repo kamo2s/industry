@@ -1,9 +1,10 @@
 import { one, type Queryable, type Row } from './connection';
 import { lifecycle, micro, usd, policySchema, type Agent, type Metrics } from '../core';
-import { balances } from './journal';
+import { balances, internalUnit } from './journal';
 import {operationalStatus} from './operations';
 export async function metrics(db: Queryable, a: Row): Promise<Metrics> {
   const r = (await one(db, `SELECT
+    COALESCE(sum(amount) FILTER(WHERE category='revenue' AND direction='credit' AND created_at>now()-interval '7 days'),0) service_revenue7d,
     COALESCE(sum(CASE WHEN direction='credit' THEN amount ELSE -amount END) FILTER(WHERE network='sandbox'),0) balance,
     COALESCE(sum(amount) FILTER(WHERE category='revenue' AND external),0) total_revenue,
     COALESCE(sum(amount) FILTER(WHERE category='revenue' AND external AND created_at>now()-interval '14 days' AND created_at<=now()-interval '7 days'),0) previous_revenue,
@@ -21,7 +22,14 @@ export async function metrics(db: Queryable, a: Row): Promise<Metrics> {
   const business=(await one(db,`SELECT count(*) FILTER(WHERE r.provider_agent_id=$1) sold,count(*) FILTER(WHERE r.requester_agent_id=$1) purchased,count(DISTINCT r.provider_agent_id) FILTER(WHERE r.requester_agent_id=$1) hired,COALESCE(sum(p.amount) FILTER(WHERE r.requester_agent_id=$1),0) volume FROM service_requests r JOIN payments p ON p.id=r.payment_id WHERE r.status='succeeded' AND p.status='settled' AND (r.provider_agent_id=$1 OR r.requester_agent_id=$1)`,[a.id]))!;
   const activeServices=Number((await one(db,'SELECT count(*) n FROM agent_services WHERE agent_id=$1 AND active',[a.id]))!.n);
   const observed=await one(db,'SELECT sustaining_since FROM agent_business_states WHERE agent_id=$1',[a.id]);
-  return { balance, operatingBalance:funds.operating,computeCredits:funds.compute, revenue24h: usd(Number(r.revenue24h)), revenue7d, cost7d, net7d: revenue7d-cost7d, jobs: Number(j.jobs), customers: Number(p.customers), externalPaidJobs: Number(p.n), ratio: cost7d>0 ? revenue7d/cost7d : 0, lifecycle: state,jobs24h:Number(j.jobs24h),jobs7d:Number(j.jobs7d),totalRevenue:usd(Number(r.total_revenue)),servicesSold:Number(business.sold),servicesPurchased:Number(business.purchased),agentsHired:Number(business.hired),a2aVolume:usd(Number(business.volume)),activeServices,revenueGrowth:Number(r.previous_revenue)>0?(Number(r.revenue7d)/Number(r.previous_revenue)-1)*100:null,selfSustainingSince:state==='SELF-SUSTAINING'?observed?.sustaining_since||null:null };
+  // Public earnings include all settled service receipts. Eligibility above stays independent.
+  const serviceRevenue7d=usd(Number(r.service_revenue7d));
+  const funding=(await one(db,`SELECT COALESCE(sum(t.amount),0) amount FROM ledger_transactions t
+    JOIN ledger_accounts c ON c.id=t.credit_account
+    WHERE c.business_id=$1 AND c.kind IN ('BUSINESS_COMPUTE','BUSINESS_OPERATING')
+    AND t.unit=$2 AND t.reference_type='pump-fee-allocation' AND t.created_at>now()-interval '7 days'`,[a.business_id||a.id,internalUnit()]))!;
+  const publicIncome={serviceRevenue7d,serviceNet7d:serviceRevenue7d-cost7d,pumpFunding7d:usd(Number(funding.amount))};
+  return { ...publicIncome, balance, operatingBalance:funds.operating,computeCredits:funds.compute, revenue24h: usd(Number(r.revenue24h)), revenue7d, cost7d, net7d: revenue7d-cost7d, jobs: Number(j.jobs), customers: Number(p.customers), externalPaidJobs: Number(p.n), ratio: cost7d>0 ? revenue7d/cost7d : 0, lifecycle: state,jobs24h:Number(j.jobs24h),jobs7d:Number(j.jobs7d),totalRevenue:usd(Number(r.total_revenue)),servicesSold:Number(business.sold),servicesPurchased:Number(business.purchased),agentsHired:Number(business.hired),a2aVolume:usd(Number(business.volume)),activeServices,revenueGrowth:Number(r.previous_revenue)>0?(Number(r.revenue7d)/Number(r.previous_revenue)-1)*100:null,selfSustainingSince:state==='SELF-SUSTAINING'?observed?.sustaining_since||null:null };
 }
 export async function agentView(db: Queryable, a: Row): Promise<Agent> {
   const owner = await one(db,'SELECT primary_wallet FROM profiles WHERE id=$1',[a.creator_profile_id]);

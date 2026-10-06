@@ -25,7 +25,7 @@ export function directoryMatches(a:Agent,f:DirectoryFilters,models:DirectoryMode
 }
 export function sortDirectory(coins:Agent[],sort:string){
  return [...coins].sort((a,b)=>{
-  const difference=sort==='New'?Date.parse(b.created_at)-Date.parse(a.created_at):sort==='Revenue'?b.metrics.revenue7d-a.metrics.revenue7d:sort==='Most Productive'?(b.metrics.jobs7d||0)-(a.metrics.jobs7d||0):sort==='Market Cap'?(b.market?.marketCap??-1)-(a.market?.marketCap??-1):Number(coinDirectoryStatus(b)==='Self-Sustaining')-Number(coinDirectoryStatus(a)==='Self-Sustaining')||b.metrics.revenue7d-a.metrics.revenue7d;
+  const difference=sort==='New'?Date.parse(b.created_at)-Date.parse(a.created_at):sort==='Revenue'?(b.metrics.serviceRevenue7d ?? b.metrics.revenue7d)-(a.metrics.serviceRevenue7d ?? a.metrics.revenue7d):sort==='Most Productive'?(b.metrics.jobs7d||0)-(a.metrics.jobs7d||0):sort==='Market Cap'?(b.market?.marketCap??-1)-(a.market?.marketCap??-1):Number(coinDirectoryStatus(b)==='Self-Sustaining')-Number(coinDirectoryStatus(a)==='Self-Sustaining')||(b.metrics.serviceRevenue7d ?? b.metrics.revenue7d)-(a.metrics.serviceRevenue7d ?? a.metrics.revenue7d);
   return difference||a.name.localeCompare(b.name)||a.id.localeCompare(b.id);
  });
 }
