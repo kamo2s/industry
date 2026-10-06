@@ -195,3 +195,7 @@ Supersedes the preceding Splice-reuse and missing-password status. Owner created
 ## Phantom authentication network mismatch — October 6, 2026
 
 Removed hardcoded solana:devnet from the optional SIWS Chain ID field. Wallet identity sessions are network-independent; transaction network validation and all Pump/mainnet gates remain unchanged. Domain/URI, nonce, expiry, stored-message signature verification and single-use challenges remain enforced. Regression verifies successful signing without chain binding and rejection of altered messages; existing replay/expiry cases pass (20 economy tests). Typecheck and targeted lint pass. Deploying via main; real Phantom confirmation still requires the owner's wallet.
+
+## Larger launch artwork — October 6, 2026
+
+Owner confirmed hosted Phantom login now works. Launch artwork accepts PNG/JPEG/WebP sources up to 10 MiB (40 megapixel decoded limit), replacing the old 256 KiB input cap and 128px forced crop. Server decodes and validates content, honors orientation, preserves aspect ratio/transparency, strips metadata and outputs up to 1024px WebP within the existing 256 KiB private-storage limit; difficult-to-compress artwork can fall back to 512px. Shared client/server size policy and truthful upload copy added. Ten artwork/image tests pass, including multi-megabyte input, invalid/disguised content, byte ceiling, transparency and no enlargement. No economics or launch gates changed. Previously uploaded 128px images require re-upload for higher quality.

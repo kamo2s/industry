@@ -2,7 +2,8 @@ import {publicAppUrl,validateEnvironment} from '../../../../../packages/core/env
 import {ratePolicy,rateNamespace} from '../../../../../packages/core/rate-policy';
 import { NextRequest,NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
-import sharp from 'sharp';
+import {optimizeArtwork} from '../../../../../packages/core/artwork-upload';
+import {ARTWORK_MAX_BYTES,ARTWORK_UPLOAD_HELP} from '../../../../../packages/core/artwork-limits';
 import { rpc } from '../../../../../packages/db/client';
 import { AppError } from '../../../../../packages/core';
 import { hash } from '../../../../../packages/core/security';
@@ -43,9 +44,9 @@ async function handler(req:NextRequest,{params}:{params:Promise<{path:string[]}>
     }
     if(route==='uploads'&&req.method==='POST') {
       if(!identity?.profile)throw new AppError('UNAUTHORIZED','Authenticate your wallet first',401);
-      const form=await new Response(await boundedBody(req,280000),{headers:{'Content-Type':req.headers.get('content-type')||''}}).formData(),file=form.get('file');
-      if(!(file instanceof File)||file.size>262144||!['image/png','image/jpeg','image/webp'].includes(file.type))throw new AppError('INVALID_IMAGE','Upload a PNG, JPEG, or WebP image under 256 KB');
-      const image=await sharp(Buffer.from(await file.arrayBuffer()),{limitInputPixels:4_000_000}).resize(128,128,{fit:'cover'}).webp({quality:80}).toBuffer();
+      const form=await new Response(await boundedBody(req,ARTWORK_MAX_BYTES+65536),{headers:{'Content-Type':req.headers.get('content-type')||''}}).formData(),file=form.get('file');
+      if(!(file instanceof File))throw new AppError('INVALID_IMAGE',ARTWORK_UPLOAD_HELP,400);
+      const image=await optimizeArtwork(Buffer.from(await file.arrayBuffer()),file.type);
       return NextResponse.json(await rpc('uploads/create',{content:image.toString('base64'),mime:'image/webp'},token));
     }
     if(path[0]==='network'&&path[1]==='images'&&path.length===3&&req.method==='GET'){
