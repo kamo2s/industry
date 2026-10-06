@@ -151,7 +151,8 @@ export class Domain {
         const wallet=z.string().min(32).max(44).parse(body.wallet); ensure(bs58.decode(wallet).length===32,'INVALID_WALLET','Invalid public key');
         const nonce=randomToken(),id=randomUUID(),issued=new Date(),expires=new Date(Date.now()+300000);
         const site=new URL(publicAppUrl());
-        const message=`${site.host} wants you to sign in with your Solana account:\n${wallet}\n\nSign in to INDUSTRY. This does not authorize transactions.\n\nURI: ${site.origin}\nVersion: 1\nChain ID: solana:devnet\nNonce: ${nonce}\nIssued At: ${issued.toISOString()}\nExpiration Time: ${expires.toISOString()}`;
+        // Wallet ownership is network-independent; SIWS chainId is optional. Transaction gates remain separate.
+        const message=`${site.host} wants you to sign in with your Solana account:\n${wallet}\n\nSign in to INDUSTRY. This does not authorize transactions.\n\nURI: ${site.origin}\nVersion: 1\nNonce: ${nonce}\nIssued At: ${issued.toISOString()}\nExpiration Time: ${expires.toISOString()}`;
         await tx.query('DELETE FROM wallet_challenges WHERE expires_at<now()');
         await tx.query('INSERT INTO wallet_challenges(id,wallet,nonce_hash,message,expires_at) VALUES($1,$2,$3,$4,$5)',[id,wallet,hash(nonce),message,expires]);
         return {id,message,expiresAt:expires};

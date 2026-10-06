@@ -14,6 +14,18 @@ beforeAll(async()=>{process.env.APP_MODE='demo';process.env.WALLET_ENCRYPTION_KE
 afterAll(async()=>{await db?.close();});
 describe('durable Postgres economy',()=>{
   it('runs migrations and deterministic seed, deriving network metrics',async()=>{await seed(db);const agents=await domain.dispatch('agents/list');expect(agents).toHaveLength(5);const stats=await domain.dispatch('network/stats');expect(stats.agentsOnline).toBe(5);expect(stats.totalRevenue).toBeCloseTo(264.45,2);expect(stats.series).toHaveLength(7);});
+  it('authenticates network-independent wallet ownership and rejects altered messages',async()=>{
+    const keys=nacl.sign.keyPair(),wallet=bs58.encode(keys.publicKey);
+    const c=await domain.dispatch('auth/challenge',{wallet});
+    expect(c.message).not.toContain('Chain ID:');
+    expect(c.message).toContain(`\n${wallet}\n`);
+    expect(c.message).toMatch(/Nonce: [a-f0-9]{64}\n/);
+    expect(c.message).toContain('Expiration Time:');
+    const signed=(message:string)=>bs58.encode(nacl.sign.detached(new TextEncoder().encode(message),keys.secretKey));
+    await expect(domain.dispatch('auth/verify',{id:c.id,wallet,signature:signed(c.message.replace('Sign in to INDUSTRY.','Sign in elsewhere.'))})).rejects.toThrow('invalid');
+    const auth=await domain.dispatch('auth/verify',{id:c.id,wallet,signature:signed(c.message)});
+    expect(auth.profile.wallet).toBe(wallet);
+  });
   it('consumes wallet challenges once and rejects expiry',async()=>{const a=await login();await expect(domain.dispatch('auth/verify',{id:a.challenge.id,wallet:a.wallet,signature:a.signature})).rejects.toThrow('already used');const c=await domain.dispatch('auth/challenge',{wallet:a.wallet});await db.query("UPDATE wallet_challenges SET expires_at=now()-interval '1 second' WHERE id=$1",[c.id]);await expect(domain.dispatch('auth/verify',{id:c.id,wallet:a.wallet,signature:a.signature})).rejects.toThrow();});
   it('creates agent, wallet, service, funding and initial job atomically and idempotently',async()=>{const input=agentSchema.parse({name:'TEST WORKER',ticker:'TEST',description:'Research and organize public technology evidence.',mission:'Research and organize public technology evidence safely.',category:'Research',tags:['Research'],jobType:'Researcher',tools:['web_search','marketplace'],tokenMode:'sandbox',initialBudget:10,policy:defaultPolicy,services:[serviceSchema.parse({name:'Test research',description:'Collect sourced evidence for a public research topic.',price:.01})]});const key=randomUUID();agent=await domain.dispatch('agents/create',{input,key},session);const again=await domain.dispatch('agents/create',{input,key},session);expect(again.id).toBe(agent.id);expect(Number((await one(db,'SELECT count(*) n FROM jobs WHERE agent_id=$1',[agent.id]))!.n)).toBe(1);const detail=await domain.dispatch('agents/get',{id:agent.id});expect(detail.agent.metrics.lifecycle).toBe('BOOTING');expect(detail.agent.metrics.revenue7d).toBe(0);service=(await domain.dispatch('services/list')).find((s:any)=>s.agent_id===agent.id);});
   it('executes real queued work outside the UI and saves safe memory/cost',async()=>{await drain();const a=await domain.dispatch('agents/get',{id:agent.id});expect(a.agent.metrics.lifecycle).toBe('ACTIVE');expect(a.agent.metrics.jobs).toBe(1);expect(a.memories.length).toBe(1);expect(a.jobs[0].output.sources.length).toBeGreaterThan(0);expect(a.agent.metrics.cost7d).toBeGreaterThan(0);});
