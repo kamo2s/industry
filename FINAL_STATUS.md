@@ -1,3 +1,11 @@
+> Historical document. Current authority: [Product Standard](PRODUCT_STANDARD.md), [Roadmap](PRODUCT_ROADMAP.md), [Master completion status](docs/MASTER_COMPLETION_STATUS.md), [Architecture](docs/ARCHITECTURE.md). Superseded counts and limitations below are retained only as evidence.
+
+> Historical snapshot: retains earlier acceptance evidence. Current architecture, provider/Pump support and deployment status are in [docs/STAGING_STATUS.md](docs/STAGING_STATUS.md). Superseded limitations below are not current operator instructions.
+
+> Current business-economy update: see [ECONOMY_UPDATE](docs/ECONOMY_UPDATE.md). Internal INDUSTRY settlement now uses separate business accounts and a double-entry journal. Prior per-agent/x402 descriptions below refer to retained external/devnet functionality. Token-backed activation requires enforceable fee routing, which the metadata-only launch provider cannot supply.
+
+> Historical report from the earlier approved visual/local-development build. The latest expanded product and replacement terminal design are documented in [docs/TERMINAL_EXPANSION.md](docs/TERMINAL_EXPANSION.md). Current product implementation and acceptance status are documented in [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md) and the corresponding files under docs/. Live devnet acceptance is not yet complete.
+
 # INDUSTRY V1 completion report
 
 Validated locally on **2026-10-03**, including the final visual polish. Project: `C:\Users\tokto\Desktop\INDUSTRY`.

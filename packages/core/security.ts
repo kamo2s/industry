@@ -1,4 +1,5 @@
 import { createHash, randomBytes, createCipheriv, createDecipheriv, timingSafeEqual } from 'node:crypto';
+import {appEnvironment} from './environment';
 import nacl from 'tweetnacl';
 import bs58 from 'bs58';
 import { ensure } from './index';
@@ -21,7 +22,7 @@ export function decryptSecret(value: string) {
   decipher.setAuthTag(tag); return Buffer.concat([decipher.update(data),decipher.final()]);
 }
 export function safetyConfig() {
-  ensure(!['ENABLE_MAINNET','ENABLE_MAINNET_TOKEN_LAUNCH','ENABLE_AUTONOMOUS_MAINNET_SPEND'].some(k=>process.env[k]==='true'), 'MAINNET_DISABLED', 'Mainnet actions are not implemented in this V1 build',503);
+  ensure(!['MAINNET_ENABLED','ENABLE_MAINNET','ENABLE_MAINNET_TOKEN_LAUNCH','ENABLE_AUTONOMOUS_MAINNET_SPEND'].some(k=>process.env[k]==='true'), 'MAINNET_DISABLED', 'Mainnet is locked pending a separate approved deployment',503);
   ensure(!process.env.SOLANA_NETWORK || process.env.SOLANA_NETWORK==='devnet','NETWORK_DENIED','Only devnet is enabled',503);
 }
-export const demoMode = () => process.env.APP_MODE === 'demo';
+export const demoMode = () => appEnvironment()==='local' && process.env.APP_MODE === 'demo';

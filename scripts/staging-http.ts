@@ -1,0 +1,13 @@
+import {readFile,writeFile} from 'node:fs/promises';
+const people=JSON.parse(await readFile('.data/staging/identities.json','utf8')),base='http://localhost:3100',checks:Record<string,boolean>={};
+const request=(path:string,session?:string,method='GET',body?:unknown,origin=base)=>fetch(base+'/api/'+path,{method,headers:{...(session?{Cookie:'industry_session='+session}:{}),...(method==='GET'?{}:{Origin:origin,'Content-Type':'application/json'})},body:body===undefined?undefined:JSON.stringify(body)});
+checks.healthy=(await request('health')).ok;
+checks.sessionSurvivesWebRestart=!!(await (await request('auth/session',people[0].session)).json()).profile;
+checks.adminAllowed=(await request('admin/status',people[0].session)).ok;
+checks.anonymousAdminDenied=[401,403].includes((await request('admin/status')).status);
+checks.crossOwnerAdminDenied=(await request('admin/status',people[1].session)).status===403;
+checks.originDenied=(await request('agents/'+people[0].agent.id+'/pause',people[0].session,'POST',{},'https://untrusted.example')).status===403;
+checks.crossOwnerMutationDenied=(await request('agents/'+people[0].agent.id+'/pause',people[1].session,'POST',{})).status===403;
+const stream=await request('stream'),reader=stream.body!.getReader(),first=await reader.read();checks.sseReconnected=!!first.value&&new TextDecoder().decode(first.value).includes('event: refresh');await reader.cancel();
+let rateLimited=false;for(let i=0;i<22;i++){const r=await request('auth/challenge',undefined,'POST',{wallet:people[0].wallet});if(r.status===429){rateLimited=true;break;}}checks.authRateLimit=rateLimited;
+await writeFile('qa/staging/http.json',JSON.stringify({at:new Date().toISOString(),base,checks,allPassed:Object.values(checks).every(Boolean)},null,2));console.log(JSON.stringify({checks,allPassed:Object.values(checks).every(Boolean)}));if(Object.values(checks).some(v=>!v))process.exitCode=1;

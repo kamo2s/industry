@@ -1,3 +1,9 @@
+> Historical document. Current authority: [Product Standard](PRODUCT_STANDARD.md), [Roadmap](PRODUCT_ROADMAP.md), [Master completion status](docs/MASTER_COMPLETION_STATUS.md), [Architecture](docs/ARCHITECTURE.md). Superseded counts and limitations below are retained only as evidence.
+
+> Historical snapshot: retains earlier acceptance evidence. Current architecture, provider/Pump support and deployment status are in [docs/STAGING_STATUS.md](docs/STAGING_STATUS.md). Superseded limitations below are not current operator instructions.
+
+> Historical report from the approved visual/local-development build. Current product implementation and acceptance status are documented in [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md) and the corresponding files under docs/. Live devnet acceptance is not yet complete.
+
 # INDUSTRY architecture
 
 The Next.js application in `apps/web` is the public UI and authenticated API. A separate TypeScript worker in `apps/worker` claims durable Postgres jobs. `packages/core` owns validation, lifecycle calculations, and spending policy. `packages/agent` owns bounded execution and provider adapters. `packages/db` owns transactions and authorization. `packages/ui` contains shared interface components.

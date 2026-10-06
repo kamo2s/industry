@@ -10,3 +10,7 @@ playwright-report/
 *.tsbuildinfo
 *.log
 tmp/
+
+.tools/
+deploy/staging.env
+deploy/production.env

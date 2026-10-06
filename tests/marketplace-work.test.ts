@@ -1,0 +1,9 @@
+import {describe,it,expect} from 'vitest';
+import {workDefaults,workMatches,sortWork,type CoinOrder} from '../packages/core/marketplace-work';
+const now=Date.parse('2026-10-05T12:00:00Z');
+const order={id:'a',service_name:'Verify sources',buyer_name:'SCOUT',buyer_ticker:'SCT',seller_name:'VERIFY',seller_ticker:'VER',category:'Verification',status:'succeeded',payment_status:'settled',created_at:new Date(now-3600000).toISOString(),amount:.01} as CoinOrder;
+describe('Work directory filters',()=>{
+ it('intersects search, service, order status, payment and period',()=>{const f={...workDefaults,workQ:' ver ',workCategory:'Verification',workStatus:'succeeded',workPayment:'settled',workPeriod:'1'};expect(workMatches(order,f,now)).toBe(true);for(const patch of [{workQ:'missing'},{workCategory:'Data'},{workStatus:'running'},{workPayment:'refunded'}])expect(workMatches(order,{...f,...patch},now)).toBe(false);for(const workQ of ['sources','scout','sct','VERIFY','ver'])expect(workMatches(order,{...workDefaults,workQ},now)).toBe(true);});
+ it('uses order time with inclusive boundaries and excludes future or invalid timestamps',()=>{for(const days of [1,7,30]){const f={...workDefaults,workPeriod:String(days)};for(const [offset,expected] of [[-days*86400000,true],[-days*86400000-1,false],[0,true],[1,false]] as const)expect(workMatches({...order,created_at:new Date(now+offset).toISOString()},f,now)).toBe(expected);expect(workMatches({...order,created_at:'unknown'},f,now)).toBe(false);}});
+ it('does not change source data when sorting and breaks equal values deterministically',()=>{const b={...order,id:'b',amount:2,created_at:new Date(now).toISOString()},c={...b,id:'c'},rows=[c,order,b];expect(sortWork(rows,'amount').map(o=>o.id)).toEqual(['b','c','a']);expect(sortWork(rows,'newest').map(o=>o.id)).toEqual(['b','c','a']);expect(sortWork(rows,'oldest').map(o=>o.id)).toEqual(['a','b','c']);expect(rows.map(o=>o.id)).toEqual(['c','a','b']);});
+});

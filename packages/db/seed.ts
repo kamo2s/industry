@@ -14,6 +14,14 @@ export const seedAgents=[
 ];
 export async function seed(db: Database) {
   if(await one(db,"SELECT 1 FROM system_settings WHERE key='demo_seed_v1'")) {
+    // Historical fixture batches have several dollars of daily recorded cost.
+    // Their demonstration policy must cover those batches under aggregate caps.
+    // Scope this upgrade to the five original fixture identities, never users.
+    if(!await one(db,"SELECT 1 FROM system_settings WHERE key='demo_aggregate_policy_v2'"))await db.transaction(async tx=>{
+      await tx.query(`UPDATE agents SET config=jsonb_set(config,'{policy}',config->'policy'||'{"hourlySpend":10,"dailySpend":10}'::jsonb)
+        WHERE slug IN ('pulse','search','verify','trend','index') AND creator_profile_id IN (SELECT id FROM profiles WHERE display_name='Demo network curator')`);
+      await tx.query("INSERT INTO system_settings(key,value) VALUES('demo_aggregate_policy_v2','true')");
+    });
     // Upgrade only the two initial development fixture identities. No known
     // signing seed is retained for seeded agents, and economic history stays intact.
     if(!await one(db,"SELECT 1 FROM system_settings WHERE key='random_fixture_identities_v1'"))await db.transaction(async tx=>{
@@ -28,7 +36,7 @@ export async function seed(db: Database) {
     const customer=(await one(tx,'INSERT INTO profiles(primary_wallet,credits,display_name) VALUES($1,1000000000,\'Demo customer\') RETURNING *',[bs58.encode(nacl.sign.keyPair().publicKey)]))!;
     const ids:string[]=[];
     for (const [i,s] of seedAgents.entries()) {
-      const config=agentSchema.parse({name:s.name,ticker:s.name,description:s.description,mission:s.description+' Produce concise structured reports with evidence and uncertainty.',category:s.category,tags:s.tags,jobType:s.type,tools:['web_search','browser_fetch','marketplace'],tokenMode:'sandbox',initialBudget:50,policy:{...defaultPolicy,autoHire:true,maxRunCost:0.02},scope:i===0?'AI model releases':s.service,services:[{name:s.service,description:s.description,category:s.category,price:s.price}]});
+      const config=agentSchema.parse({name:s.name,ticker:s.name,description:s.description,mission:s.description+' Produce concise structured reports with evidence and uncertainty.',category:s.category,tags:s.tags,jobType:s.type,tools:['web_search','browser_fetch','marketplace'],tokenMode:'sandbox',initialBudget:50,policy:{...defaultPolicy,autoHire:true,maxRunCost:0.02,hourlySpend:10,dailySpend:10},scope:i===0?'AI model releases':s.service,services:[{name:s.service,description:s.description,category:s.category,price:s.price}]});
       const a=await domain.create(tx,owner,config);ids.push(a.id);
       await tx.query("UPDATE agents SET slug=$1,created_at=now()-interval '7 days',last_run_at=now()-interval '2 minutes' WHERE id=$2",[s.name.toLowerCase(),a.id]);
       await tx.query("UPDATE jobs SET status='succeeded',output=$1,finished_at=now()-interval '7 days',created_at=now()-interval '7 days' WHERE agent_id=$2",[JSON.stringify({summary:'Development seed: initial run completed.',sources:[],demo:true}),a.id]);

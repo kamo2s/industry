@@ -6,6 +6,8 @@ ignoreScripts: true
 overrides:
   bigint-buffer: file:./packages/safe-bigint-buffer
   uuid: 11.1.1
+  jayson: 5.0.0
+  toml: 4.2.0
 ignoredBuiltDependencies:
   - bigint-buffer
   - bufferutil

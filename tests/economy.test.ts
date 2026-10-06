@@ -41,11 +41,10 @@ describe('durable Postgres economy',()=>{
   it('keeps purchased memory private and handles a dependency finishing before its parent',async()=>{
     const queued=await domain.dispatch('agents/run',{id:agent.id,key:randomUUID()},session);
     const parent=await domain.worker('claim',{worker:'parent'});expect(parent.job.id).toBe(queued.jobId);
-    const result=await executeRun(parent,(op,b)=>op==='services'?domain.dispatch('services/list'):domain.worker(op,b));
-    expect(result.output.delegation.jobId).toBeTruthy();
-    const child=await domain.worker('claim',{worker:'child'});expect(child.job.id).toBe(result.output.delegation.jobId);
-    const answer=await executeRun(child,(op,b)=>domain.worker(op,b));
-    await domain.worker('complete',{id:child.job.id,lease:child.job.lease,...answer});
+    let child:any;
+    const result=await executeRun(parent,async(op,b)=>{if(op==='dependency'){child=await domain.worker('claim',{worker:'child',serviceOnly:true});if(child){const answer=await executeRun(child,(op,b)=>domain.worker(op,b));await domain.worker('complete',{id:child.job.id,lease:child.job.lease,...answer});}}return domain.worker(op,b);});
+    expect(result.output.delegation.jobId).toBe(child.job.id);
+    expect(result.output.summary).toContain('Incorporated');
     await domain.worker('complete',{id:parent.job.id,lease:parent.job.lease,...result});
     expect((await domain.dispatch('jobs/get',{id:parent.job.id})).output.delegation.status).toBe('succeeded');
     const publicView=await domain.dispatch('agents/get',{id:agent.id});
@@ -79,5 +78,5 @@ describe('durable Postgres economy',()=>{
     expect(Number((await one(db,"SELECT count(*) n FROM jobs WHERE agent_id=$1 AND trigger_type='interval'",[second.id]))!.n)).toBe(1);
     const result=await executeRun(claim,(op,b)=>domain.worker(op,b));await domain.worker('complete',{id:claim.job.id,lease:claim.job.lease,...result});
   });
-  it.each(['Watcher','Indexer','Verifier','Custom'])('executes the %s template',async jobType=>{const a=(await domain.dispatch('agents/get',{id:agent.id})).agent;a.job_type=jobType;a.config.jobType=jobType;a.config.policy.autoHire=false;const output=await executeRun({agent:a,job:{id:randomUUID(),lease:randomUUID(),type:'RUN',payload:{input:{topic:'Public documentation'}}},memories:[]},async()=>({config:a.config}));expect(output.output.summary).toBeTruthy();expect(output.memory.sourceUrls.length).toBeGreaterThan(0);if(jobType==='Watcher')expect(output.output.monitor.baseline).toBe(true);if(jobType==='Verifier')expect(output.output.verdict.status).toBe('needs-review');});
+  it.each(['Watcher','Indexer','Verifier','Custom'])('executes the %s template',async jobType=>{const a=(await domain.dispatch('agents/get',{id:agent.id})).agent;a.job_type=jobType;a.config.jobType=jobType;a.config.policy.autoHire=false;const output=await executeRun({agent:a,job:{id:randomUUID(),lease:randomUUID(),type:'RUN',payload:{input:{topic:'Public documentation'}}},memories:[]},async op=>op==='index/query'?[]:({config:a.config}));if('deferred' in output||'blocked' in output)throw Error('Expected a useful initial task');expect(output.output.summary).toBeTruthy();expect(output.memory.sourceUrls.length).toBeGreaterThan(0);if(jobType==='Watcher')expect(output.output.monitor.baseline).toBe(true);if(jobType==='Verifier')expect(output.output.verdict.status).toBe('needs-review');});
 });

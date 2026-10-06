@@ -1,0 +1,10 @@
+{$STAGING_DOMAIN} {
+    basic_auth {
+        {$STAGING_ACCESS_USER} {$STAGING_ACCESS_HASH}
+    }
+    reverse_proxy web:3000 {
+        header_up X-Industry-Client-IP {remote_host}
+        flush_interval -1
+    }
+    header Strict-Transport-Security "max-age=31536000"
+}

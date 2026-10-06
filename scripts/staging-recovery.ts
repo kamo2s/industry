@@ -1,0 +1,15 @@
+import {readFile,writeFile,open} from 'node:fs/promises';import {spawn} from 'node:child_process';import {randomUUID} from 'node:crypto';
+import {database,one} from '../packages/db/connection';import {Domain} from '../packages/db/domain';import {executeRun} from '../packages/agent/runtime';
+const cfg=JSON.parse(await readFile('.data/staging/environment.json','utf8'));Object.assign(process.env,cfg,{NODE_ENV:'test',OPENAI_API_KEY:'',OPENROUTER_API_KEY:'',SEARCH_PROVIDER_API_KEY:''});const target=new URL(cfg.DATABASE_URL);target.pathname='/industry_stress';process.env.DATABASE_URL=target.href;const db=await database(),d=new Domain(db),checks:Record<string,boolean>={};
+const a=(await one(db,'SELECT * FROM agents ORDER BY created_at LIMIT 1'))!,id=randomUUID();await db.query("INSERT INTO jobs(id,agent_id,type,trigger_type,idempotency_key,payload) VALUES($1,$2,'RUN','recovery',$3,$4)",[id,a.id,'recovery:'+id,JSON.stringify({input:{topic:'PostgreSQL documentation'}})]);
+const log=await open('.data/staging/recovery-worker.log','a');const child=spawn(process.execPath,['--import','tsx','scripts/staging-recovery-worker.ts'],{stdio:['ignore',log.fd,log.fd],windowsHide:true});
+let claim:any;for(let i=0;i<100;i++){try{claim=JSON.parse(await readFile('.data/staging/crash-claim.json','utf8'));if(claim.job.id===id)break;}catch{}await new Promise(r=>setTimeout(r,100));}
+if(!claim||claim.job.id!==id)throw Error('Crash fixture failed to claim');const killedAt=new Date().toISOString();child.kill('SIGTERM');await new Promise(r=>child.once('exit',r));checks.killedDuringRunning=(await one(db,'SELECT status FROM jobs WHERE id=$1',[id]))?.status==='running';
+const before=await one(db,'SELECT next_run_at FROM agents WHERE id=$1',[a.id]);
+// Wait out the real 90-second lease, without accelerating timestamps.
+const deadline=Date.now()+120000;while(Date.now()<deadline){const c=await d.worker('claim',{worker:'replacement-after-crash'});if(c){const result=await executeRun(c,(op,b)=>d.worker(op,b));await d.worker('complete',{id:c.job.id,lease:c.job.lease,...result});if(c.job.id===id)break;}await new Promise(r=>setTimeout(r,1500));}
+const done=await one(db,'SELECT status,attempts FROM jobs WHERE id=$1',[id]);checks.recovered=done?.status==='succeeded'&&done.attempts===2;
+try{await d.worker('complete',{id,lease:claim.job.lease,cost:0,runs:[],output:{summary:'stale'}});checks.staleDenied=false;}catch{checks.staleDenied=true;}
+const entries=(await db.query("SELECT amount,idempotency_key FROM ledger_entries WHERE job_id=$1 AND category='compute'",[id])).rows;checks.priorUsageChargedOnce=entries.filter(e=>Number(e.amount)===500).length===1;checks.twoAttemptsCharged=entries.length===2;
+checks.schedulePreserved=JSON.stringify(await one(db,'SELECT next_run_at FROM agents WHERE id=$1',[a.id]))===JSON.stringify(before);
+await writeFile('qa/staging/recovery.json',JSON.stringify({at:new Date().toISOString(),killedAt,checks,jobId:id,leaseWaitSeconds:(Date.now()-Date.parse(killedAt))/1000},null,2));console.log(JSON.stringify({checks}));await db.close();await log.close();if(Object.values(checks).some(v=>!v))process.exitCode=1;

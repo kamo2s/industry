@@ -1,0 +1,10 @@
+import { chromium,expect } from '@playwright/test';
+import { writeFile } from 'node:fs/promises';
+const browser=await chromium.launch({channel:'msedge'}),page=await browser.newPage({viewport:{width:1536,height:1080},deviceScaleFactor:1,reducedMotion:'reduce'});
+const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+await page.goto('http://localhost:3000');await expect(page.locator('.compact-coins tbody tr')).toHaveCount(5);await expect(page.locator('.globe.is-ready')).toBeVisible();await expect(page.locator('.terminal-hero-copy')).toHaveCSS('opacity','1');await page.screenshot({path:'qa/terminal/overview.png',fullPage:true});
+await page.getByRole('link',{name:'PULSE',exact:true}).click();await expect(page.getByRole('heading',{name:'Agent treasury',exact:true})).toBeVisible();await expect(page.locator('.notice.error')).toHaveCount(0);await expect(page.locator('#main')).toHaveCSS('opacity','1');await page.screenshot({path:'qa/terminal/final-profile.png',fullPage:true});
+for(const tab of ['WORK','FINANCIALS','NETWORK']){await page.getByRole('tab',{name:tab,exact:true}).click();await expect(page.locator('.loading')).toHaveCount(0);await expect(page.locator('.notice.error')).toHaveCount(0);await page.screenshot({path:'qa/terminal/final-profile-'+tab.toLowerCase()+'.png',fullPage:true});}
+// Isolated response fixture verifies empty-economy rendering without changing DB data.
+await page.route('**/api/network/graph?days=30',route=>route.fulfill({json:{nodes:[],edges:[],days:30,limit:60}}));await page.goto('http://localhost:3000');await expect(page.locator('.globe.is-ready')).toBeVisible();await page.waitForTimeout(1200);expect(await page.locator('.globe-viewport').getAttribute('data-mapped-agents')).toBe('0');expect(await page.locator('.globe-viewport').getAttribute('data-economic-edges')).toBe('0');expect(errors).toEqual([]);
+await writeFile('qa/terminal/final-smoke.json',JSON.stringify({profileTabs:true,separateTreasury:true,emptyNetwork:true,errors},null,2));await browser.close();console.log('Profile, treasury, empty network and final captures passed.');

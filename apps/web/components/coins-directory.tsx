@@ -1,0 +1,79 @@
+'use client';
+import Link from 'next/link';
+import {useEffect,useRef,useState} from 'react';
+import {ArrowRight,Boxes,BrainCircuit,ChartNoAxesCombined,Check,ChevronDown,Coins,Database,Eye,FileText,Grid2X2,List,Orbit,Radio,RotateCcw,Search,ShieldCheck,SlidersHorizontal,Sparkles,Telescope,X,Zap,type LucideIcon} from 'lucide-react';
+import {serviceTone} from '../../../packages/core/marketplace-directory';
+import {money,type Agent} from '../../../packages/core';
+import {coinInitials,safeCoinImageUrl} from '../../../packages/core/coin-images';
+import {coinDirectoryStatus,directoryDefaults,directoryMatches,directoryRoles,providerName,sortDirectory,type DirectoryFilters,type DirectoryModel} from '../../../packages/core/coin-directory';
+import {useData,ErrorNotice} from './client';
+import {Pagination} from './directories';
+import {BusinessPortrait} from './business-portrait';
+import {WatchButton} from './community';
+
+const roleIcons:Record<string,LucideIcon>={Researcher:Telescope,Verifier:ShieldCheck,Watcher:Eye,Analyst:ChartNoAxesCombined,Scout:Orbit,Indexer:Database,Reporter:FileText,Auditor:Check,Custom:Boxes};
+const sorts=[['Featured','Featured'],['New','Newest'],['Revenue','Top revenue'],['Most Productive','Most active'],['Market Cap','Highest market cap']];
+const sortNotes:Record<string,string>={Featured:'Self-sustaining Coins first, then 7-day business revenue.',New:'Newest businesses first.',Revenue:'Ranked by recorded business revenue over 7 days.', 'Most Productive':'Ranked by completed jobs over 7 days.','Market Cap':'Ranked by the latest verified market observation.'};
+const number=(n:number)=>n.toLocaleString('en-US');
+function useDirectoryFilters(){
+ const [f,setFilters]=useState<DirectoryFilters>(directoryDefaults);
+ useEffect(()=>{const read=()=>{const params=new URLSearchParams(location.search);setFilters(Object.fromEntries(Object.entries(directoryDefaults).map(([k,v])=>[k,params.get(k)??v])) as DirectoryFilters);};read();addEventListener('popstate',read);return()=>removeEventListener('popstate',read);},[]);
+ function update(patch:Partial<DirectoryFilters>,reset=false){setFilters(current=>{const next={...(reset?directoryDefaults:current),page:'1',...patch},url=new URL(location.href);for(const [k,v] of Object.entries(next)){if(v&&v!==directoryDefaults[k as keyof DirectoryFilters])url.searchParams.set(k,v);else url.searchParams.delete(k);}history.replaceState(null,'',url);return next;});}
+ return [f,update] as const;
+}
+function RoleIcon({role,size=15}:{role:string;size?:number}){const Icon=roleIcons[role]||Boxes;return <Icon size={size} aria-hidden="true"/>;}
+function CoinArtwork({coin}:{coin:Agent}){
+ const url=coin.token||safeCoinImageUrl(coin.icon_url)?`/api/network/images/${coin.id}?variant=card`:null;
+ const [failed,setFailed]=useState<string|null>(null),[loaded,setLoaded]=useState<string|null>(null);
+ return <div className={'cd-artwork'+(loaded===url&&url&&failed!==url?' has-art':'')}>
+  <div className="cd-monogram" aria-label={`${coin.ticker} artwork placeholder`}><span>{coinInitials(coin.ticker)}</span><small>INDUSTRY</small></div>
+  {url&&failed!==url&&<img src={url} alt={`${coin.name} Coin artwork`} width={512} height={336} loading="lazy" decoding="async" onError={()=>setFailed(url)} onLoad={e=>{try{const canvas=document.createElement('canvas');canvas.width=16;canvas.height=16;const ctx=canvas.getContext('2d');if(ctx){ctx.drawImage(e.currentTarget,0,0,16,16);const data=ctx.getImageData(0,0,16,16).data;if(!data.some((v,i)=>i%4===3&&v>8)){setFailed(url);return;}}}catch{/* A successfully decoded image remains usable. */}setLoaded(url);}}/>}
+ </div>;
+}
+function CoinCard({coin:a,model,rank}:{coin:Agent;model?:DirectoryModel;rank?:number}){
+ const state=coinDirectoryStatus(a),tone=state==='Self-Sustaining'?'sustaining':state==='Active'?'active':state==='Dormant'||state==='Needs funding'?'dormant':state==='Needs attention'?'error':'paused';
+ return <article className="cd-card" data-tone={serviceTone(a.category)}>
+  <div className="cd-cover"><CoinArtwork coin={a}/><div className="cd-badges">{rank?<span className="cd-rank" title="Position in these filtered results">#{rank}</span>:<span/>}<span className={'cd-status '+tone}><i/>{state}</span></div>{a.token?.network!=='mainnet-beta'&&<span className="cd-test">{!a.token?'TEST COIN':'DEVNET'}</span>}</div>
+  <div className="cd-card-content"><div className="cd-identity"><h2 title={a.name}>{a.name}</h2><span title={'$'+a.ticker}>${a.ticker}</span></div>
+   <div className="cd-role"><RoleIcon role={a.job_type}/><span>{a.job_type}</span><small title={model?model.name:'Model not in the current catalog'}>{model?providerName(model):'AI business'}</small></div>
+   <p className="cd-description" title={a.description}>{a.description||'An autonomous business in the INDUSTRY economy.'}</p>
+   <dl className="cd-card-metrics"><div><dd>{money(a.metrics.revenue7d,a.metrics.revenue7d<1?3:0)}</dd><dt>Revenue · 7d</dt></div><div><dd>{number(a.metrics.jobs)}</dd><dt>Jobs done</dt></div><div title={a.market?`Verified ${a.market.source} observation · ${a.market.observedAt}`:'No verified market observation'}><dd>{a.market?money(a.market.marketCap,0):'—'}</dd><dt>Market cap</dt></div></dl>
+   <Link className="cd-open" href={'/coins/'+a.slug} aria-label={'Open '+a.name+' Coin'}>Open Coin<ArrowRight size={16}/></Link>
+  </div>
+ </article>;
+}
+function CoinList({items}:{items:Agent[]}){return <div className="cd-list table-overflow"><table className="terminal-table simple-coin-table"><thead><tr>{['Coin','Activity','Network','Market cap','Trading volume · 24h','Business revenue · 7d','Business profit · 7d',''].map((s,i)=><th key={i}>{s||<span className="sr-only">Watch</span>}</th>)}</tr></thead><tbody>{items.map(a=><tr key={a.id}><td><Link className="coin-cell" href={'/coins/'+a.slug}><BusinessPortrait business={a} size={42}/><span><strong>{a.name}</strong><small>${a.ticker}</small></span></Link></td><td><Link className="paired-agent" href={'/coins/'+a.slug+'?tab=live'} aria-label={'Open '+a.name+' workspace'}><span><strong>{a.job_type}</strong><small>Watch live</small></span><ArrowRight size={14}/></Link></td><td><span className="network-type">{!a.token?'Test coin':a.token.network==='mainnet-beta'?'Solana':a.token.network==='devnet'?'Devnet':a.token.network}</span></td><td>{a.market?money(a.market.marketCap,0):<span className="muted">Not available</span>}</td><td>{a.market?money(a.market.volume24h,0):<span className="muted">Not available</span>}</td><td className="green">{money(a.metrics.revenue7d,3)}</td><td className={a.metrics.net7d>=0?'green':'negative'}>{money(a.metrics.net7d,3)}</td><td><WatchButton businessId={a.business_id}/></td></tr>)}</tbody></table></div>;}
+
+export function CoinsDirectory(){
+ const data=useData<Agent[]>('agents',true),catalog=useData<{models:DirectoryModel[]}>('models'),[f,update]=useDirectoryFilters(),[drawer,setDrawer]=useState(false),dialog=useRef<HTMLDialogElement>(null);
+ const coins=data.data||[],models=catalog.data?.models||[],providers=[...new Set(models.map(providerName))],filtered=sortDirectory(coins.filter(a=>directoryMatches(a,f,models)),f.sort),size=20,page=Math.min(Math.max(1,Number(f.page)||1),Math.max(1,Math.ceil(filtered.length/size))),items=filtered.slice((page-1)*size,page*size),hasMarket=coins.some(a=>a.market);
+ const statuses=['Active','Self-Sustaining','Dormant','Paused',...['Starting','Retrying','Awaiting supplier','Budget cooldown','Provider waiting','Needs funding','Needs attention','Retired'].filter(s=>coins.some(a=>coinDirectoryStatus(a)===s))];
+ const count=(facet:'role'|'provider'|'status',value:string)=>coins.filter(a=>directoryMatches(a,{...f,[facet]:value,...(facet==='provider'?{model:''}:{})},models)).length;
+ const allCount=(facet:'role'|'provider'|'status')=>coins.filter(a=>directoryMatches(a,f,models,facet)).length;
+ const activeFilters=[f.q,f.role,f.category,f.provider,f.model,f.status,f.network].filter(Boolean).length;
+ useEffect(()=>{if(!drawer)return;const previous=document.body.style.overflow;document.body.style.overflow='hidden';dialog.current?.showModal();return()=>{document.body.style.overflow=previous;};},[drawer]);
+ const clear=()=>update({view:f.view},true);
+ function filterOption({facet,value,label,Icon}:{facet:'role'|'provider'|'status';value:string;label:string;Icon?:LucideIcon}){const selected=f[facet].toUpperCase()===value.toUpperCase(),n=value?count(facet,value):allCount(facet);return <button key={facet+value} type="button" className={'cd-filter-option'+(selected?' selected':'')} aria-pressed={selected} onClick={()=>update({[facet]:value,...(facet==='provider'?{model:''}:{})})}>{Icon?<Icon size={15}/>:facet==='role'?<RoleIcon role={value}/>:facet==='status'?<i className={'cd-filter-dot '+value.toLowerCase().replaceAll(' ','-')}/>:<BrainCircuit size={15}/>}<span>{label}</span><small>{data.data===null?'—':number(n)}</small></button>;}
+ const filters=<><div className="cd-sidebar-title">FILTERS{drawer&&<button className="cd-icon-button" aria-label="Close filters" onClick={()=>dialog.current?.close()}><X size={18}/></button>}</div>
+  <section className="cd-filter-group"><h2><Boxes size={17}/>Business type</h2><p>The role this Coin plays</p>{filterOption({facet:'role',value:'',label:'All roles',Icon:Boxes})}{directoryRoles.map(role=>filterOption({facet:'role',value:role,label:role}))}</section>
+  <section className="cd-filter-group"><h2><BrainCircuit size={17}/>AI model</h2><p>The brain powering this Coin</p>{filterOption({facet:'provider',value:'',label:'All providers',Icon:BrainCircuit})}{providers.map(provider=>filterOption({facet:'provider',value:provider,label:provider}))}{f.provider&&models.filter(m=>providerName(m)===f.provider).length>1&&<label className="cd-model-select">Model<select aria-label="Coin model" value={f.model} onChange={e=>update({model:e.target.value})}><option value="">All {f.provider} models</option>{models.filter(m=>providerName(m)===f.provider).map(m=><option value={m.id} key={m.id}>{m.name}</option>)}</select></label>}{catalog.error&&<small className="cd-filter-note">Model catalog is temporarily unavailable.</small>}</section>
+  <section className="cd-filter-group"><h2><Radio size={17}/>Status</h2><p>Current operational state</p>{filterOption({facet:'status',value:'',label:'All statuses',Icon:Orbit})}{statuses.map(s=>filterOption({facet:'status',value:s,label:s}))}</section>
+  <div className="cd-filter-footer"><button className="cd-clear" onClick={clear}><RotateCcw size={13}/>Clear filters</button>{drawer&&<button className="cd-open" onClick={()=>dialog.current?.close()}>Show {number(filtered.length)} Coins<ArrowRight size={15}/></button>}</div></>;
+ const metrics=[{label:'Total Coins',value:coins.length,Icon:Coins},{label:'Active',value:coins.filter(a=>['Active','Self-Sustaining'].includes(coinDirectoryStatus(a))).length,Icon:Radio},{label:'Self-Sustaining',value:coins.filter(a=>coinDirectoryStatus(a)==='Self-Sustaining').length,Icon:Zap},{label:'Active services',value:coins.reduce((sum,a)=>sum+(a.metrics.activeServices||0),0),Icon:Boxes}];
+ return <div className="coins-directory"><aside className="cd-sidebar" aria-label="Coin filters">{filters}</aside><div className="cd-main">
+  <header className="cd-heading"><div className="cd-intro"><p className="cd-eyebrow">THE BUSINESSES</p><h1>Coins</h1><p className="cd-subtitle">Autonomous businesses, powered by AI.</p><p className="cd-intro-note">Discover their roles, follow their work, and see what they earn.</p></div><div className="cd-summary" aria-label="Economy overview">{metrics.map(({label,value,Icon},i)=><div className={'cd-summary-item summary-'+i} key={label} title={label==='Active'?'Enabled, funded Coins without a recorded error. Includes Coins ready between jobs.':label==='Self-Sustaining'?'Coins meeting the recorded revenue and operating cost criteria.':undefined}><Icon size={24}/><span><strong>{data.data===null?'—':number(value)}</strong><small>{label}</small></span></div>)}</div></header>
+  <div className="cd-search-row"><label className="cd-search"><Search size={16}/><input aria-label="Search coins" placeholder="Search Coins, roles, tickers or addresses…" value={f.q} onChange={e=>update({q:e.target.value})}/>{f.q&&<button className="cd-icon-button" aria-label="Clear search" onClick={()=>update({q:''})}><X size={14}/></button>}</label><select aria-label="Coin network" value={f.network} onChange={e=>update({network:e.target.value})}><option value="">All networks</option><option value="live">Live tokens</option><option value="devnet">Devnet tokens</option><option value="test">Test Coins</option></select><button className="cd-mobile-filters" onClick={()=>setDrawer(true)}><SlidersHorizontal size={16}/>Filters{activeFilters>0&&<span>{activeFilters}</span>}</button></div>
+  <div className="cd-view-bar"><div className="cd-quick-views" aria-label="Quick views">{sorts.map(([value,label])=><button key={value} disabled={value==='Market Cap'&&!hasMarket} title={value==='Market Cap'&&!hasMarket?'No verified market data available':sortNotes[value]} aria-pressed={f.sort===value} onClick={()=>update({sort:value})}>{label}</button>)}</div><div className="cd-view-options"><div className="cd-view-toggle" aria-label="Directory view"><button aria-label="Grid view" aria-pressed={f.view!=='list'} onClick={()=>update({view:'grid'})}><Grid2X2 size={17}/></button><button aria-label="List view" aria-pressed={f.view==='list'} onClick={()=>update({view:'list'})}><List size={18}/></button></div><label className="cd-sort">Sort by<select aria-label="Sort coins" value={f.sort} onChange={e=>update({sort:e.target.value})}>{sorts.map(([value,label])=><option key={value} value={value} disabled={value==='Market Cap'&&!hasMarket}>{label}</option>)}</select><ChevronDown size={13}/></label></div></div>
+  <div className="cd-results-meta"><span role="status">{data.loading?'Loading Coins…':data.error&&!data.data?'Directory unavailable':`${number(filtered.length)} ${filtered.length===1?'Coin':'Coins'}`}{f.category&&<> · {f.category}</>}{activeFilters>0&&<> · <button onClick={clear}>Clear filters</button></>}</span><span>{sortNotes[f.sort]||sortNotes.Featured}</span></div>
+  <ErrorNotice error={data.error}/>{data.error&&<button className="cd-clear cd-retry" onClick={()=>void data.refresh()}>Retry loading Coins</button>}
+  {data.loading?<div className="cd-grid" role="status" aria-label="Loading Coin directory">{Array.from({length:10},(_,i)=><div className="cd-skeleton" key={i}><div/><span/><span/><span/></div>)}</div>:items.length?f.view==='list'?<CoinList items={items}/>:<div className="cd-grid">{items.map((a,i)=><CoinCard key={a.id} coin={a} model={models.find(m=>m.id===a.config.brain)} rank={(['Revenue','Most Productive'].includes(f.sort)||(f.sort==='Market Cap'&&!!a.market))?(page-1)*size+i+1:undefined}/>)}</div>:!data.error&&<div className="cd-empty"><Search size={28}/><h2>No Coins match these filters</h2><p>Try a different role, model or search term.</p><button className="cd-clear" onClick={clear}><RotateCcw size={14}/>Clear filters</button></div>}
+  {!data.loading&&filtered.length>size&&<Pagination count={filtered.length} page={page} size={size} set={p=>{update({page:String(p)});requestAnimationFrame(()=>document.querySelector('.cd-view-bar')?.scrollIntoView({block:'start',behavior:'instant'}));}}/>}
+  <p className="cd-footnote"><Sparkles size={13}/>Revenue is recorded business income, not token price growth. Test Coins use development balances. A dash means no verified market data.</p>
+ </div>{drawer&&<dialog ref={dialog} className="cd-filter-dialog" aria-label="Filter Coins" onClose={()=>setDrawer(false)} onClick={e=>{if(e.target===e.currentTarget)dialog.current?.close();}}><div className="cd-drawer-content">{filters}</div></dialog>}</div>;
+}
+
+
+
+
+
+

@@ -1,3 +1,9 @@
+> Current product authority: [Autonomous Coins](docs/AUTONOMOUS_COINS.md). Creator control and human ordering described in earlier workflows below are retired. Public RPC is observer-only after launch; runtime purchases require the worker credential and a valid lease. Historical financial records and platform recovery remain supported.
+
+> Historical document. Current authority: [Product Standard](PRODUCT_STANDARD.md), [Roadmap](PRODUCT_ROADMAP.md), [Master completion status](docs/MASTER_COMPLETION_STATUS.md), [Architecture](docs/ARCHITECTURE.md). Superseded counts and limitations below are retained only as evidence.
+
+> Historical report from the approved visual/local-development build. Current product implementation and acceptance status are documented in [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md) and the corresponding files under docs/. Live devnet acceptance is not yet complete.
+
 # INDUSTRY V1 security model
 
 This delivery is a local development/test economy. No production custody, public token, X account, mainnet settlement, or public deployment was created. It is not an audited custody service.

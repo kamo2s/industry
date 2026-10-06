@@ -1,0 +1,123 @@
+# Run: docker compose --env-file deploy/staging.env up --build -d
+x-common: &common
+  APP_ENV: staging
+  APP_MODE: live
+  PUBLIC_APP_URL: ${PUBLIC_APP_URL:?Set the HTTPS staging origin}
+  SOLANA_NETWORK: devnet
+  PUMP_NETWORK: devnet
+  RATE_LIMIT_NAMESPACE: industry-staging
+  TRUST_PROXY_IP_HEADER: x-industry-client-ip
+  STAGING_PROVIDER_DAILY_CAP_USD: ${STAGING_PROVIDER_DAILY_CAP_USD:-2.00}
+  PROVIDER_EXECUTION_PAUSED: ${PROVIDER_EXECUTION_PAUSED:-false}
+  EMERGENCY_PAUSE: ${EMERGENCY_PAUSE:-false}
+  PUMP_LAUNCH_ENABLED: 'false'
+  PUMP_MAINNET_LAUNCH_ENABLED: 'false'
+  PUMP_FEE_COLLECTION_ENABLED: 'false'
+  PUMP_MAINNET_COLLECTION_ENABLED: 'false'
+  MAINNET_ENABLED: 'false'
+services:
+  edge:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ['80:80', '443:443']
+    environment:
+      STAGING_DOMAIN: ${STAGING_DOMAIN:?Set staging hostname}
+      STAGING_ACCESS_USER: ${STAGING_ACCESS_USER:?Set staging reviewer login}
+      STAGING_ACCESS_HASH: ${STAGING_ACCESS_HASH:?Set a Caddy password hash}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - tls-data:/data
+      - tls-config:/config
+    depends_on: [web]
+  web:
+    build: .
+    restart: unless-stopped
+    init: true
+    environment:
+      <<: *common
+      INTERNAL_API_URL: http://database:4318
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET:?Required}
+      SESSION_SECRET: ${SESSION_SECRET:?Required}
+    depends_on:
+      database: {condition: service_healthy}
+    healthcheck:
+      test: ['CMD', 'node', '--import', 'tsx', 'scripts/healthcheck.ts', '--web']
+      interval: 15s
+      timeout: 10s
+      retries: 4
+    stop_grace_period: 30s
+  database:
+    build: .
+    command: ['node', '--import', 'tsx', 'packages/db/server.ts']
+    restart: unless-stopped
+    init: true
+    environment:
+      <<: *common
+      DB_HOST: 0.0.0.0
+      DATABASE_URL: ${DATABASE_URL:?Dedicated TLS PostgreSQL required}
+      DATABASE_CA_CERT: ${DATABASE_CA_CERT:-}
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET:?Required}
+      WORKER_API_SECRET: ${WORKER_API_SECRET:?Required}
+      PUMP_COLLECTOR_API_SECRET: ${PUMP_COLLECTOR_API_SECRET:?Required}
+      WALLET_ENCRYPTION_KEY: ${WALLET_ENCRYPTION_KEY:?Required}
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:?Required}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:?Required}
+      CAPTURE_STORAGE_BUCKET: ${CAPTURE_STORAGE_BUCKET:-browser-captures}
+      ICON_STORAGE_BUCKET: ${ICON_STORAGE_BUCKET:-agent-icons}
+      WORKER_OPENAI_CONFIGURED: 'true'
+      OPENAI_MODEL: gpt-6-luna
+      OPENAI_ALLOWED_MODELS: gpt-6-luna
+      SEARCH_PROVIDER: openai
+      ADMIN_WALLETS: ${ADMIN_WALLETS:?Required}
+      AGENTS_ENABLED: ${AGENTS_ENABLED:-true}
+      AUTONOMOUS_PAYMENTS_ENABLED: ${AUTONOMOUS_PAYMENTS_ENABLED:-true}
+      INTERNAL_LEDGER_ENABLED: 'true'
+      TOKEN_LAUNCH_ENABLED: 'false'
+      PUMP_RECONCILIATION_ENABLED: 'false'
+      INDUSTRY_FEE_TREASURY: ${INDUSTRY_FEE_TREASURY:-}
+      INDUSTRY_FEE_COLLECTOR: ${INDUSTRY_FEE_COLLECTOR:-}
+      PUMP_METADATA_BASE_URL: ${PUMP_METADATA_BASE_URL:-}
+      BACKUP_RESTORE_VERIFIED_AT: ${BACKUP_RESTORE_VERIFIED_AT:-}
+    healthcheck:
+      test: ['CMD', 'node', '--import', 'tsx', 'scripts/healthcheck.ts']
+      interval: 15s
+      timeout: 10s
+      retries: 4
+    stop_grace_period: 160s
+  worker:
+    build: .
+    command: ['node', '--import', 'tsx', 'apps/worker/index.ts']
+    restart: unless-stopped
+    init: true
+    environment:
+      <<: *common
+      INTERNAL_API_URL: http://database:4318
+      WORKER_API_SECRET: ${WORKER_API_SECRET:?Required}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?Required}
+      OPENAI_MODEL: gpt-6-luna
+      OPENAI_ALLOWED_MODELS: gpt-6-luna
+      SEARCH_PROVIDER: openai
+      BROWSER_PROVIDER: fetch
+    depends_on:
+      database: {condition: service_healthy}
+    healthcheck:
+      test: ['CMD', 'node', '-e', 'fetch("http://127.0.0.1:4419").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))']
+      interval: 15s
+      timeout: 10s
+      retries: 4
+    stop_grace_period: 150s
+  collector:
+    build: .
+    command: ['node', '--import', 'tsx', 'apps/collector/index.ts']
+    restart: unless-stopped
+    init: true
+    environment:
+      <<: *common
+      INTERNAL_API_URL: http://database:4318
+      PUMP_COLLECTOR_API_SECRET: ${PUMP_COLLECTOR_API_SECRET:?Required}
+    depends_on:
+      database: {condition: service_healthy}
+    stop_grace_period: 320s
+volumes:
+  tls-data:
+  tls-config:

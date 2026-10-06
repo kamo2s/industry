@@ -1,1 +1,1 @@
-export { Marketplace as default } from '../../components/explore';
+export {default} from '../../components/marketplace-directory';

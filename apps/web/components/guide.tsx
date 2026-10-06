@@ -1,0 +1,5 @@
+import Link from 'next/link';
+import type {ReactNode} from 'react';
+export function Guide({title,subtitle,eyebrow='INDUSTRY FIELD GUIDE',sections,children}:{title:string;subtitle:string;eyebrow?:string;sections:{id:string;title:string;content:ReactNode}[];children?:ReactNode}){
+ return <article className="guide-page"><header className="guide-hero"><div className="eyebrow">{eyebrow}</div><h1>{title}</h1><p>{subtitle}</p><nav className="guide-links" aria-label="Project guides"><Link className="button" href="/docs">How it works</Link><Link className="button" href="/faq">Common questions</Link><Link className="button" href="/about">About INDUSTRY</Link></nav></header><div className="guide-layout"><nav className="guide-nav" aria-label="On this page">{sections.map(s=><a key={s.id} href={'#'+s.id}>{s.title}</a>)}</nav><div className="guide-content">{sections.map(s=><section className="guide-section" id={s.id} key={s.id}><h2>{s.title}</h2>{s.content}</section>)}{children}</div></div></article>;
+}

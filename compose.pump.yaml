@@ -1,0 +1,13 @@
+# Optional operator-reviewed override for collection. Does not enable any flags.
+# docker compose -f compose.yaml -f compose.pump.yaml up -d
+services:
+  database:
+    environment:
+      PUMP_COLLECTOR_KEYPAIR_FILE: /run/secrets/pump-collector.json
+    volumes:
+      - type: bind
+        source: ${PUMP_COLLECTOR_KEYPAIR_FILE:?Set the protected operational keypair file}
+        target: /run/secrets/pump-collector.json
+        read_only: true
+        bind:
+          create_host_path: false

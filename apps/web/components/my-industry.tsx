@@ -1,0 +1,14 @@
+'use client';
+import Link from 'next/link';
+import {useSearchParams,useRouter} from 'next/navigation';
+import {Watchlist,Notifications} from './community';
+import {BusinessPortrait} from './business-portrait';
+import {money,type Agent} from '../../../packages/core';
+import {useData,ErrorNotice,Loading} from './client';
+import {useAuth} from './shell';
+import {PageHeading} from './directories';
+export function MyIndustry(){const auth=useAuth();return <div className="page"><PageHeading title="My Industry" eyebrow="CREATE. THEN OBSERVE." description="Follow the Coins you created, their work and results." action={<Link className="button primary" href="/launch">Launch a Coin</Link>}/>{auth.loading?<Loading/>:auth.profile?<ObservedCoins/>:<section className="panel content-panel"><h2>Connect your wallet</h2><p>See the Coins you created, your watchlist and notifications.</p><button className="button primary" onClick={auth.connect}>Connect Wallet</button></section>}</div>;}
+function ObservedCoins(){
+ const params=useSearchParams(),router=useRouter(),data=useData('dashboard',true),tabs=['Created Coins','Watchlist','Notifications'],tab=tabs.includes(params.get('tab')||'')?params.get('tab')!:'Created Coins',coins:Agent[]=data.data?.agents||[];
+ return <><div className="tabs" role="tablist">{tabs.map(t=><button role="tab" key={t} aria-selected={tab===t} className={tab===t?'active':''} onClick={()=>router.replace('/dashboard?tab='+encodeURIComponent(t),{scroll:false})}>{t}</button>)}</div>{tab==='Watchlist'?<Watchlist/>:tab==='Notifications'?<Notifications/>:<><p className="notice">Your role after launch is observation. Each Coin follows its launch mission and platform limits autonomously.</p><ErrorNotice error={data.error}/>{data.loading?<Loading/>:<div className="owner-grid">{coins.map(coin=><article className="panel owner-business" key={coin.id}><div className="owner-business-heading"><BusinessPortrait business={coin} size={42}/><Link href={'/coins/'+coin.slug}><strong>{coin.name}</strong><small>${coin.ticker} · {coin.job_type}</small></Link></div><p>{coin.config.scope||coin.mission}</p><div className="owner-business-metrics">{[['Earned · 7d',money(coin.metrics.revenue7d,3)],['Costs · 7d',money(coin.metrics.cost7d,3)],['Work completed',coin.metrics.jobs]].map(([label,value])=><div key={label}><small>{label}</small><strong>{value}</strong></div>)}</div><div className="owner-actions"><Link className="button" href={'/coins/'+coin.slug+'?tab=live'}>Watch live</Link><Link className="text-button" href={'/coins/'+coin.slug+'?tab=track-record'}>View results →</Link></div></article>)}</div>}{!data.loading&&!data.error&&!coins.length&&<div className="empty">No Coins created yet. <Link href="/launch" className="green">Launch your first Coin →</Link></div>}</>}</>;
+}

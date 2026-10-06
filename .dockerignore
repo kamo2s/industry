@@ -1,0 +1,16 @@
+.git
+.data
+.env
+.env.*
+!.env.example
+node_modules
+apps/web/.next
+qa
+test-results
+playwright-report
+*.log
+*.tsbuildinfo
+
+.tools
+deploy/staging.env
+deploy/production.env

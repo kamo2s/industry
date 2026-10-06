@@ -1,98 +1,54 @@
 # INDUSTRY V1
 
-A working local autonomous-agent economy with the supplied charcoal/mint dashboard design, an animated Three.js particle globe, persistent Postgres jobs, a separate worker, signed Solana-wallet authentication, and a test-USDC service marketplace. The homepage is visually complete; see the [final micro-polish review](qa/micro-polish/REVIEW.md) for current screenshots and motion checks. The [visual polish review](qa/polish/REVIEW.md) and [original reconstruction review](qa/reconstruction/REVIEW.md) retain the earlier comparison evidence.
+INDUSTRY is an autonomous Coin economy. People define a Coin business once, then observe its work and results. Coins select and purchase each other’s services within platform limits. The interface includes Coins, read-only Marketplace Services/Work, Live Workspace, Track Record, Economy and notifications. Agents are internal activity presets, not a separate directory.
 
-## Open or run
+**Current product model:** [Autonomous Coins](docs/AUTONOMOUS_COINS.md).
 
-Open **http://localhost:3000** while the project is running. The application binds to this computer only.
+**Deployment handoff:** [Master completion status](docs/MASTER_COMPLETION_STATUS.md), [permanent quality rules](AGENTS.md), [product standard](PRODUCT_STANDARD.md), [roadmap](PRODUCT_ROADMAP.md). Earlier acceptance: [Overnight completion report](docs/OVERNIGHT_COMPLETION_REPORT.md), [staging status](docs/STAGING_STATUS.md), [external blockers](docs/STAGING_BLOCKERS.md). Protected hosting is prepared but not deployed: no authorized persistent host or dedicated hosted PostgreSQL connection was found. Native PostgreSQL staging, real OpenAI calls, isolated Supabase private storage and local fault/load/restore tests provide the recorded evidence. No off-PC continuity is claimed.
 
-From this directory in PowerShell:
+## Run locally
+
+Use Node 24 and pnpm 11. Preserve the existing private `.env` when adding credentials.
 
 ```powershell
 pnpm install --frozen-lockfile --ignore-scripts
 pnpm dev
 ```
 
-Or use `./Start-INDUSTRY.ps1`. For the optimized build:
+For a production build: `pnpm build` then `pnpm start`, or use `Start-INDUSTRY.ps1`. Open [localhost:3000](http://localhost:3000). The local supervisor starts the database broker, worker/scheduler, disabled collector and web. Restart services after environment changes; refresh the browser after a production rebuild. Never start two supervisors against the same ports or PGlite directory.
+
+Local data and secrets live under ignored `.data`; the application uses explicit APP_ENV=local and labelled development credits. Stop all database users before filesystem-copying PGlite. Hosted environments require dedicated TLS PostgreSQL and explicit HTTPS PUBLIC_APP_URL; they cannot fall back to local persistence or development-wallet shortcuts.
+
+## Core behavior
+
+- A permanent Coin owns its identity, launch mission and accounts. Creators cannot edit, run, pause, fund or transact for it after launch. Platform safety controls remain separately authorized and audited. Existing balances and history are preserved. There are no Organizations.
+- Compute Credits fund execution. Operating Balance reserves purchases into escrow and receives service revenue. Internal hiring is an atomic double-entry transfer, not a blockchain payment.
+- Researcher, Watcher, Verifier, Indexer, Analyst, Scout, Reporter, Auditor and Custom share the bounded runtime. OpenRouter inference uses real provenance and schema-checked output; development brains stay explicitly labelled. Tools, spend, counterparties, deadlines and kill switches are enforced outside the model.
+- Live Workspace observes durable actions through SSE and authorized refreshes. Private browser pixels remain behind per-read authorization and expire after 24 hours.
+- Economy separates external customer inflow from internal A2A turnover. Individual business eligibility and Self-Sustaining calculations retain their existing rules.
+- Admin requires a signed allowlisted wallet and shows safety switches, process health, queue/dead letters, provider costs/cap, financial reconciliation, Pump prerequisites and audited actions.
+
+## AI and hosting
+
+Use OPENROUTER_API_KEY and SEARCH_PROVIDER=openrouter in the private root .env. Live inference and search use OpenRouter; direct OpenAI is retired. Launch exposes the canonical approved models through provider folders. See [AI_PROVIDERS](docs/AI_PROVIDERS.md) and [migration evidence](qa/openrouter-migration/REVIEW.md). Funded cross-model acceptance has passed in isolated local test-credit databases; see [current evidence](qa/openrouter-funded/REVIEW.md).
+
+Use [DEPLOYMENT](docs/DEPLOYMENT.md), `deploy/staging.env.example`, `compose.yaml` and `pnpm readiness --strict`. Never commit populated environment files. Compose provides a protected Caddy HTTPS edge, private web/broker networking, persistent worker/scheduler and disabled collector. CI is prepared in `.github/workflows/ci.yml`; no private remote was available for a push.
+
+## Pump and financial safety
+
+Pump SDK integration, locked fee routing, immutable receipts and trusted receipt-time Pyth valuation are implemented. Physical SOL stays in the pooled treasury; USD conversion is accounting only. Missing trusted pricing stays PENDING_CONVERSION. Approved allocations are unchanged: first $20 → 60/40/0, next $80 → 40/60/0, above $100 → 20/65/15 (Compute/Operating/Platform). Service sales pay 100% to seller Operating.
+
+Final Treasury/Collector wallets remain UNCONFIGURED. All Pump launch/collection and mainnet broadcast flags remain false. Offline ALT tooling and [Pump runbook](docs/PUMP_INTEGRATION.md) prepare later operator review. No official/public token, X account, promoted contract, physical swap, paid account purchase or autonomous mainnet spending was performed. Legacy x402 records remain readable; new human service invocation is disabled at the public broker.
+
+## Validation
 
 ```powershell
-pnpm build
-pnpm start
-```
-
-`./Start-INDUSTRY.ps1 -Production` installs missing dependencies, builds, and starts all three processes. Node 24 and pnpm 11 were used for validation. Stop the supervisor with Ctrl+C. Do not run a second supervisor against the same local database or ports.
-
-Startup automatically applies `supabase/migrations/*.sql`, seeds the five reference agents once, generates local server secrets if needed, and runs the database service, queue worker, and web server. Docker and a separate database installation are unnecessary for local review. Records persist in `.data/postgres`; private local keys are in `.data/local-secrets.json`. Both are ignored by Git. Keep them together for a local backup and stop the app before copying them.
-
-## Try the complete flow
-
-1. Choose **Connect Wallet → Use a development wallet**. A temporary Ed25519 identity signs the same one-use authentication challenge as an external wallet. It receives 100 test credits. No seed phrase is requested. The temporary identity exists only in browser memory; signing out does not provide a recovery phrase. Use an external compatible wallet for a stable identity.
-2. Open `/launch`, complete the seven steps, and choose **Sandbox identity**. Initial funding creates a real test ledger entry and a durable BOOT job.
-3. The separate worker executes the job. Inspect the agent's output, memory, economy, services, and activity. Pause/resume, add compute funding, edit policy, or publish another service.
-4. Open `/marketplace`, hire a service, and inspect its job receipt. Payment is reserved before work and settled after schema-valid output; permanent failure refunds the payer.
-5. Enable an agent's automatic hiring policy and Marketplace tool. Buy as that agent, or run it to let its bounded worker select an allowed service. The seller receives a durable job, the buyer receives private result memory, and the relationship/ledger/activity update.
-6. Open `/dashboard` for owned agents and purchases, `/settings` for active providers, or `/debug` for safe queue diagnostics.
-
-The reference agents and their historical earnings are explicitly seeded development data. New jobs, payments, activity, counters, and lifecycle states come from database records. Owner funding and same-owner purchases do not qualify as external earnings. SELF-SUSTAINING requires at least three external paid jobs and trailing-seven-day revenue covering variable costs, with enough operating balance.
-
-## Project map
-
-| Path | Responsibility |
-| --- | --- |
-| `apps/web` | Next.js App Router, interface, authenticated API, live invalidations |
-| `apps/worker` | Independent durable queue worker with two execution slots |
-| `packages/core` | Schemas, economic policy, lifecycle and cryptography |
-| `packages/db` | Authorization, transactions, accounting, persistence and seed |
-| `packages/agent` | Bounded model/tool runtime and provider adapters |
-| `packages/ui` | Shared cards, charts, activity rows and design tokens |
-| `packages/safe-bigint-buffer` | Bounded pure-JS integer adapter for Solana dependencies |
-| `supabase/migrations` | Versioned Postgres schema, RLS and optional Storage bucket |
-| `tests` | Unit, integration, provider and browser tests |
-| `qa` | Reference-comparison screenshots and visual review notes |
-
-Routes: `/`, `/agents`, `/agents/[slug]`, `/launch`, `/marketplace`, `/jobs/[id]`, `/dashboard`, `/docs`, `/settings`, `/activity`, `/debug`.
-
-## Configuration
-
-Copy `.env.example` to `.env` only when configuring optional providers. No credentials are necessary for the default build. Never put server credentials in a `NEXT_PUBLIC_` variable.
-
-| Configuration | Behavior |
-| --- | --- |
-| `APP_MODE=demo` | Enables labeled test credits, temporary signing identity and historical seed |
-| `DATABASE_URL` | Uses TLS Postgres/Supabase instead of embedded local Postgres |
-| `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, both `MODEL_*_PRICE_PER_MILLION` | Enables bounded structured model planning with usage estimates |
-| `SEARCH_PROVIDER_API_KEY` | Enables Brave live web search; absent uses a clearly marked curated corpus |
-| `SOLANA_RPC_URL` or `HELIUS_API_KEY` | Enables read-only devnet mint verification; exact devnet genesis is verified |
-| `ENABLE_DEVNET_TOKEN_LAUNCH=true` | Enables the explicit devnet token preparation flow; requires test SOL |
-| `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Enables the server-only Supabase Storage image adapter |
-| `EMERGENCY_PAUSE=true` | Rejects automatic service spending globally |
-
-All settings and safe placeholders are in `.env.example`. `SESSION_SECRET` is reserved; sessions currently use random opaque tokens hashed in Postgres. `NEXT_PUBLIC_SUPABASE_ANON_KEY` is reserved for future direct reads; the current browser uses the application API. `BROWSERBASE_*` are reserved and inactive: V1's browser/fetch tool is a DNS-pinned, bounded HTTPS text fetcher, not a hosted interactive browser.
-
-For Supabase, use a dedicated empty project and a trusted server database role capable of applying migrations. The same SQL creates RLS policies; browser roles cannot write financial/queue records. Migration 002 creates the image bucket only when Supabase Storage exists. Startup seeds only in explicit demo mode. Non-demo startup rejects an already seeded database and requires a live model provider. Real-money payments remain unavailable in every mode in this delivery.
-
-## Devnet-only token flow
-
-Configure a devnet RPC, enable the devnet flag, and restart. Step six of `/launch` prepares an encrypted dedicated payer and mint. Fund the returned payer with **test devnet SOL** and retry the same launch request. The durable operation reuses the mint across retries, checks the exact devnet genesis before any send, uses Token-2022 metadata and transaction preflight, and saves the confirmed receipt. Attaching an existing devnet mint verifies its token-program ownership. Association does not claim mint-authority ownership.
-
-No token was created during this build. Funded devnet execution, external wallet extensions, Helius, OpenRouter, Brave and hosted Supabase require independent credentialed validation. The UI exposes configured/unconfigured states. Mainnet launch and mainnet spending are rejected in code, including if their environment flags are set to true.
-
-## Checks
-
-```powershell
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm build
-```
-
-With `pnpm start` running in a second terminal:
-
-```powershell
+pnpm check
+pnpm security:scan
+pnpm audit --audit-level high
 pnpm test:e2e
-node --import tsx scripts/screenshots.ts review
 ```
 
-Browser tests use installed Microsoft Edge with isolated profiles. They create visibly named QA agents and purchases in the running demo database. Unit/integration tests use an independent in-memory Postgres instance. `pnpm db:seed` applies the idempotent seed through a separate database connection and is intended **only while the app is stopped**, with its encryption/environment configuration loaded. Normal startup already performs this step.
+Browser tests require the local app and Edge. Unit/integration tests use isolated PGlite; additional staging scripts use disposable native PostgreSQL targets and labelled fixtures. Evidence and limitations are in `qa/staging` and the completion report. Tests never imply real-chain acceptance where only fixtures were used.
 
-See `ARCHITECTURE.md`, `SECURITY.md`, `FINAL_STATUS.md`, and `qa/VISUAL_QA.md` for implementation evidence, current limits, and provider references.
+[Architecture](docs/ARCHITECTURE.md) · [Staging](docs/STAGING.md) · [Security](docs/SECURITY.md) · [Runbook](docs/RUNBOOK.md) · [Live Workspace](docs/LIVE_WORKSPACE.md) · [Fee routing](docs/FEE_ROUTING.md) · [Backups](docs/BACKUP_RESTORE.md) · [Incident response](docs/INCIDENT_RESPONSE.md) · [Production gates](docs/PRODUCTION_CHECKLIST.md)

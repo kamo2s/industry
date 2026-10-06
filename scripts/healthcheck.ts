@@ -1,0 +1,2 @@
+import { rpc } from '../packages/db/client';
+try{if(process.argv.includes('--web')){const response=await fetch('http://127.0.0.1:3000/api/health',{signal:AbortSignal.timeout(8000)});if(!response.ok||(await response.json()).database!=='ok')process.exitCode=1;}else{const worker=process.argv.includes('--worker'),health=await rpc('health',{},undefined,worker);if(health.database!=='ok'||(worker&&health.worker!=='online'))process.exitCode=1;}}catch{process.exitCode=1;}

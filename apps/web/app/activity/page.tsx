@@ -1,1 +1,1 @@
-export { ActivityPage as default } from '../../components/explore';
+export { EconomyActivity as default } from '../../components/directories';

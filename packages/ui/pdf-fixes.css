@@ -1,0 +1,44 @@
+/* Owner's PDF corrections: restrained focus, inline search and aligned surfaces. */
+:root body :is(a,button,input,select,textarea,summary):focus-visible{outline:1px solid #8caab5!important;outline-offset:2px!important}
+:root body :is(a,button,input,select,textarea,summary):focus:not(:focus-visible){outline:none!important}
+:root body :is(input:not([type=checkbox]):not([type=radio]),textarea,select):focus{outline:none!important;border-color:#718e99!important;box-shadow:inset 0 0 0 1px #718e9940!important}
+:root body .lf-ticker-input:focus-within,:root body .lf-upload-box:focus-within{outline:1px solid #8caab5;outline-offset:1px;box-shadow:none}
+.cd-card{position:relative;isolation:isolate}.cd-card .cd-open:after{content:'';position:absolute;inset:0;z-index:2;border-radius:inherit}.cd-card:has(.cd-open:focus-visible){outline:1px solid #8caab5;outline-offset:2px}
+.home-v2 .terminal-middle{margin-top:16px}
+.home-v2 .featured-services{padding-bottom:14px}
+.home-v2 .home-service .terminal-service{height:100%;padding-bottom:16px}
+.home-v2 .home-service .service-tile-actions{padding-top:7px}
+.home-v2 .home-service .hire-button{flex-shrink:0}
+.cp-business-grid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:16px}
+.cp-bottom-grid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:16px}
+.cp-business-grid>.cp-anchor,.cp-bottom-grid>.cp-anchor,.cp-anchor>.cp-deferred{display:flex;flex-direction:column}
+.cp-anchor>.cp-deferred,.cp-deferred>.cp-panel{flex:1}
+.cp-live-layout{align-items:stretch;gap:16px}.cp-main-screen{display:flex;flex-direction:column}.cp-main-screen>.live-screen{flex:1;display:flex;flex-direction:column}.cp-operation-picker{margin-top:auto}
+.cp-idle-screen{flex:1;display:flex;flex-direction:column}.cp-idle-screen>.coin-browser{flex:1;display:flex;flex-direction:column}.cp-idle-screen .browser-awaiting{flex:1}
+.cp-live-rail{grid-template-rows:auto 1fr}.cp-live-rail>.cp-panel:last-child{min-height:190px}
+.cp-services{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.cp-business-grid .cp-panel>header,.cp-bottom-grid .cp-panel>header{min-height:43px}
+.header-find{position:relative;width:280px;flex:0 1 280px;min-width:170px;color:#9ab6c0}
+.header-find-field{height:36px;display:flex;align-items:center;gap:7px;border:1px solid #29434b;border-radius:5px;background:#081217;padding:0 9px}
+.header-find-field:focus-within{border-color:#6d8e99}.header-find-field button{display:grid;place-items:center;background:none;border:0;color:#91b0bd;padding:3px;flex:none;cursor:pointer}
+.header-find-field input{min-width:0;width:100%;background:transparent;border:0;color:#d7e7ed;font-size:11px;padding:0;height:32px;border-radius:0}
+:root body .header-find-field input:focus{border:0!important;box-shadow:none!important;outline:none!important}
+.header-find-field input::-webkit-search-cancel-button{display:none}.header-find-field input::placeholder{color:#86a3af}.header-find-field kbd{font-size:10px;border:1px solid #26404b;border-radius:3px;padding:1px 5px;color:#7f9eab}
+.header-find-results{position:absolute;top:43px;right:0;width:390px;max-width:calc(100vw - 28px);border:1px solid #34545e;border-radius:6px;background:#0a171d;box-shadow:0 12px 32px #0006;z-index:60;padding:5px}
+.header-find-results .search-results{max-height:min(420px,60vh);overflow:auto;padding:0}.header-find-results .search-results a{display:flex;gap:10px;align-items:center;padding:12px 8px;border-bottom:1px solid #20343d;border-radius:3px}.header-find-results .search-results a:hover,.header-find-results .search-results a:focus{background:#16333c}.header-find-results .search-results a>div{min-width:0;flex:1}.header-find-results .search-results strong{font-size:12px;display:block;color:#e3eef3}.header-find-results .search-results small{display:block;color:#90afbd;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:4px}.header-find-results .search-results svg{flex:none}.header-find-status{font-size:10px;line-height:1.6;color:#8aa6b2;padding:8px;margin:0}
+.guide-page{max-width:1280px;margin:auto;padding:48px 32px 65px;color:#d8e7ed}.guide-hero{max-width:800px;margin-bottom:35px}.guide-hero .eyebrow{color:#15d9bf;letter-spacing:2px;font-size:10px}.guide-hero h1{font-size:44px;letter-spacing:-1.5px;margin:12px 0}.guide-hero>p{font-size:17px;line-height:1.7;color:#a5c0cd;margin:0}.guide-links{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}.guide-links .button{font-size:12px;min-height:38px}.guide-layout{display:grid;grid-template-columns:230px minmax(0,1fr);gap:36px}.guide-nav{position:sticky;top:85px;align-self:start;display:grid;gap:2px;padding:12px;border:1px solid #203f4a;background:#07141a;border-radius:6px}.guide-nav a{font-size:12px;line-height:1.5;color:#9cbac8;padding:9px 10px;border-radius:3px}.guide-nav a:hover{background:#0d2c30;color:#33e2c6}.guide-content{min-width:0}.guide-section{scroll-margin-top:90px;margin-bottom:18px;padding:24px;border:1px solid #20414b;background:linear-gradient(145deg,#0a1b22,#061115);border-radius:6px}.guide-section h2{font-size:21px;letter-spacing:-.4px;margin:0 0 15px;color:#eef7f8}.guide-section p,.guide-section li{font-size:14px;line-height:1.8;color:#a4bfce}.guide-section p:last-child{margin-bottom:0}.guide-section a:not(.button){color:#29debf}.guide-section ul,.guide-section ol{padding-left:21px}.guide-section li{padding:3px 0}.guide-section .fee-policy-view{margin-top:20px}.guide-faq details{border-bottom:1px solid #24414a;padding:15px 0}.guide-faq details:last-child{border:0}.guide-faq summary{font-size:15px;line-height:1.6;cursor:pointer;color:#deebef}.guide-faq details[open] summary{color:#29debf}.guide-faq p{margin-bottom:3px}.guide-note{padding:16px 20px;border-left:2px solid #40899a;background:#0a2027;color:#9dbdc9;font-size:13px;line-height:1.7;margin-top:26px}
+@media(max-width:1190px){.header{height:108px;flex-wrap:wrap;padding-bottom:10px;row-gap:0}.header-find{order:10;flex:0 0 100%;width:100%;min-width:0}.header-find-field{height:34px}.header-find-results{width:100%;top:39px;max-width:none}.header .nav.open{top:108px}.header .nav:not(.open){height:60px}.header .wordmark,.header>.wallet-button{align-self:center}.guide-nav{top:125px}.guide-section{scroll-margin-top:125px}.cp-live-rail{grid-template-rows:auto}}
+@media(max-width:600px){.header{height:104px;padding-bottom:8px}.header .nav.open{top:104px}.header-find-field input{font-size:16px}.header-find-status{font-size:11px}.cp-business-grid,.cp-bottom-grid{grid-template-columns:1fr}.cp-services{grid-template-columns:1fr}.cp-live-rail>.cp-panel:last-child{min-height:0}.guide-page{padding:30px 18px 45px}.guide-hero h1{font-size:34px}.guide-hero>p{font-size:15px}.guide-layout{grid-template-columns:1fr;gap:22px}.guide-nav{position:static;grid-template-columns:1fr 1fr;gap:3px;padding:9px}.guide-nav a{font-size:11px;padding:6px}.guide-section{padding:20px 17px}.guide-section h2{font-size:19px}.guide-section p,.guide-section li{font-size:13px}.guide-faq summary{font-size:14px}}
+/* Second review: keep the preview full-width and use a compact, aligned desktop row. */
+.cp-main-screen>.live-screen{align-items:stretch}.cp-idle-screen,.cp-idle-screen>.coin-browser{width:100%;align-self:stretch;align-items:stretch}.coin-profile .cp-idle-screen .browser-address{width:100%}
+@media(min-width:1651px){.cp-business-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.cp-services{grid-template-columns:1fr}.cp-business-grid .cp-panel>header{min-height:50px}.cp-business-grid .cp-panel>header .text-button{font-size:10px}}
+.guide-nav{max-height:calc(100vh - 110px);overflow-y:auto;scrollbar-width:thin}
+@media(max-width:1190px){.guide-nav{max-height:calc(100vh - 145px)}}
+@media(max-width:600px){.guide-nav{max-height:none;overflow:visible}}
+/* A transform on the link would shrink its stretched hit target while pressed. */
+.cd-card .cd-open{transform:none!important}
+:root body .mp-search-row>label:first-child:focus-within{outline:none;border-color:#718e99;box-shadow:inset 0 0 0 1px #718e9940}
+@media(max-width:1190px){.coin-profile :is(section,.cp-anchor,#identity){scroll-margin-top:125px}}
+@media(min-width:1000px) and (max-width:1190px){.cd-sidebar{top:126px;max-height:calc(100dvh - 145px)}}
+@media(min-width:1101px) and (max-width:1190px){.mp-filter-rail{top:126px;height:calc(100dvh - 152px)}}
+:root body .header-find .header-find-field input:focus{box-shadow:none!important}

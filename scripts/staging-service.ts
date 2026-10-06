@@ -1,0 +1,11 @@
+import {readFile} from 'node:fs/promises';
+import {spawn} from 'node:child_process';
+const role=process.argv[2],config=JSON.parse(await readFile('.data/staging/environment.json','utf8'));
+const env={...process.env,...config,DOTENV_CONFIG_PATH:'.data/staging/no-dotenv',NEXT_TELEMETRY_DISABLED:'1'};
+const routes:Record<string,string[]>={database:['--import','tsx','packages/db/server.ts'],worker:['--import','tsx','apps/worker/index.ts'],collector:['--import','tsx','apps/collector/index.ts'],web:['node_modules/next/dist/bin/next','start','apps/web','--hostname','127.0.0.1','--port',config.PORT]};
+if(!routes[role])throw new Error('Choose database, worker, collector or web');
+if(role==='worker')for(const key of ['DATABASE_URL','INTERNAL_API_SECRET','WALLET_ENCRYPTION_KEY','SESSION_SECRET','SUPABASE_SERVICE_ROLE_KEY','PUMP_COLLECTOR_API_SECRET','PUMP_COLLECTOR_KEYPAIR_FILE','PYTH_API_KEY'])delete env[key];
+if(role==='web')for(const key of ['DATABASE_URL','WORKER_API_SECRET','OPENAI_API_KEY','OPENROUTER_API_KEY','SEARCH_PROVIDER_API_KEY','SUPABASE_SERVICE_ROLE_KEY','WALLET_ENCRYPTION_KEY','PUMP_COLLECTOR_API_SECRET','PUMP_COLLECTOR_KEYPAIR_FILE','PYTH_API_KEY'])delete env[key];
+delete env.OPENAI_API_KEY;
+const child=spawn(process.execPath,routes[role],{env,stdio:'inherit',windowsHide:true});
+child.on('exit',code=>process.exit(code||0));for(const signal of ['SIGINT','SIGTERM'] as const)process.on(signal,()=>child.kill(signal));
