@@ -1,3 +1,4 @@
+import {requireStagingLauncher,stagingCredits} from './staging-launch';
 import {tickerSchema} from '../core';
 import {supplierAvailable} from './supplier-availability';
 import {logEvent} from '../core/logging';
@@ -57,6 +58,7 @@ export class Domain {
     return result;
   }
   async create(tx: Queryable, profile: Row, c: AgentInput,pump?:{id:string;evidence:RoutingState;signature:string;metadataUri:string;launchId:string;launchSlot:number}) {
+    requireStagingLauncher(profile.primary_wallet,c.tokenMode);
     await requireEnabled(tx,'agents');
     if(c.autonomyVersion===1)c={...c,schedule:'continuous'};
     await validateBrain(c.brain);
@@ -163,10 +165,11 @@ export class Domain {
         ensure(challenge && challenge.wallet===input.wallet && verifySignature(input.wallet,challenge.message,input.signature),'AUTH_FAILED','Signature is invalid, expired, or already used',401);
         await tx.query('UPDATE wallet_challenges SET consumed_at=now() WHERE id=$1',[input.id]);
         const user=(await one(tx,'INSERT INTO profiles(primary_wallet,credits) VALUES($1,$2) ON CONFLICT(primary_wallet) DO UPDATE SET primary_wallet=excluded.primary_wallet RETURNING *',[input.wallet,demoMode()?100_000_000:0]))!;
+        await stagingCredits(tx,user);
         await customerAccount(tx,user);
         const session=randomToken();
         await tx.query("INSERT INTO sessions(token_hash,profile_id,expires_at) VALUES($1,$2,now()+interval '24 hours')",[hash(session),user.id]);
-        return {session,profile:{id:user.id,wallet:user.primary_wallet,credits:usd(Number(user.credits))}};
+        return {session,profile:{id:user.id,wallet:user.primary_wallet,credits:usd(Number((await customerAccount(tx,user)).balance))}};
       }
       if(op==='auth/logout') { if(token) await tx.query('DELETE FROM sessions WHERE token_hash=$1',[hash(token)]); return {ok:true}; }
       if(op==='rate') {
@@ -221,7 +224,7 @@ export class Domain {
         const output=authorized||j.config.publicOutput?j.output:null;
         return {id:j.id,agent_id:j.agent_id,agent_name:j.agent_name,agent_slug:j.agent_slug,type:j.type,status:j.status,phase:j.phase,traceId:j.trace_id,runId:j.run_id,attempts:j.attempts,output,last_error:j.last_error,created_at:j.created_at,finished_at:j.finished_at,private:!output&&!j.config.publicOutput,receipt:r?{...r,requester_profile_id:undefined,amount:usd(Number(r.amount))}:null,runs:(await tx.query('SELECT kind,provider,model_or_tool,cost_amount,status,safe_metadata FROM model_tool_runs WHERE job_id=$1',[j.id])).rows.map(v=>({...v,cost:usd(Number(v.cost_amount))}))};
       }
-      if(op==='providers') return {demo:demoMode(),...providerStatus(),payments:x402Configured()?'x402 V2 / devnet USDC':'DevPaymentProvider',database:process.env.DATABASE_URL?'Supabase / Postgres':'Local Postgres (PGlite)',solana:true,devnetLaunch:process.env.ENABLE_DEVNET_TOKEN_LAUNCH!=='false'&&process.env.TOKEN_LAUNCH_ENABLED!=='false',mainnet:false,x402:x402Configured()};
+      if(op==='providers') return {demo:testEconomy(),environment:appEnvironment(),...providerStatus(),payments:x402Configured()?'x402 V2 / devnet USDC':'DevPaymentProvider',database:process.env.DATABASE_URL?'Supabase / Postgres':'Local Postgres (PGlite)',solana:true,devnetLaunch:process.env.ENABLE_DEVNET_TOKEN_LAUNCH!=='false'&&process.env.TOKEN_LAUNCH_ENABLED!=='false',mainnet:false,x402:x402Configured()};
       if(op==='health') {const h=await one(tx,'SELECT max(heartbeat_at) last_seen FROM worker_health'); return {database:'ok',worker:h?.last_seen&&Date.now()-new Date(h.last_seen).getTime()<20000?'online':'offline',lastSeen:h?.last_seen};}
       if(op==='debug') {
         ensure(demoMode()||profile,'UNAUTHORIZED','Authenticate to inspect your own runtime jobs',401);
@@ -437,7 +440,8 @@ export class Domain {
         return {ok:true};
       }
       if(op==='defer') {
-        await requireEnabled(tx,'agents');
+    
+    await requireEnabled(tx,'agents');
         ensure(agent.config.schedule==='continuous'&&job.type!=='SERVICE','INVALID_DEFER','Only a continuous mission can wait for new work');
         ensure(!agent.paused&&!agent.terminated_at&&!agent.config.policy.killSwitch,'PAUSED','Coin execution is paused');
         const decision=z.object({reason:z.enum(['no-useful-work','awaiting-data']),seconds:z.number().int().min(30).max(3600)}).parse(b.deferred);
@@ -451,7 +455,8 @@ export class Domain {
         return {ok:true};
       }
       if(op==='complete') {
-        await requireEnabled(tx,'agents');ensure(!agent.paused&&!agent.terminated_at,'PAUSED','Agent was paused before completion');
+    
+    await requireEnabled(tx,'agents');ensure(!agent.paused&&!agent.terminated_at,'PAUSED','Agent was paused before completion');
         const cost=z.number().int().min(0).max(Number(job.payload.reservedCost)).parse(b.cost);
         if(agent.config.autonomyVersion===1||agent.config.schedule==='continuous'){
           const spent=await one(tx,"SELECT COALESCE(sum(p.amount),0) amount FROM service_requests r JOIN payments p ON p.id=r.payment_id WHERE r.parent_job_id=$1 AND p.status<>'refunded'",[job.id]);

@@ -1,0 +1,20 @@
+import {beforeAll,afterAll,afterEach,it,expect,vi} from 'vitest';
+import {database,migrate,one,type Database} from '../packages/db/connection';
+import {stagingCredits,requireStagingLauncher} from '../packages/db/staging-launch';
+let db:Database;
+beforeAll(async()=>{db=await database(true);await migrate(db);});
+afterEach(()=>vi.unstubAllEnvs());afterAll(()=>db.close());
+it('gives only the approved staging wallet one allocation, never production or strangers',async()=>{
+ const p=(await one(db,"INSERT INTO profiles(primary_wallet,credits) VALUES('approved-test-wallet',0) RETURNING *"))!;
+ vi.stubEnv('STAGING_TEST_LAUNCH_ENABLED','true');vi.stubEnv('STAGING_TEST_WALLETS',p.primary_wallet);
+ vi.stubEnv('APP_ENV','production');await db.transaction(tx=>stagingCredits(tx,p));
+ expect((await one(db,'SELECT count(*) n FROM ledger_transactions'))!.n).toBe(0);
+ vi.stubEnv('APP_ENV','staging');
+ expect(()=>requireStagingLauncher('stranger','sandbox')).toThrow('approved');
+ expect(()=>requireStagingLauncher(p.primary_wallet,'pump')).toThrow('no blockchain');
+ requireStagingLauncher(p.primary_wallet,'sandbox');
+ await db.transaction(tx=>stagingCredits(tx,p));await db.transaction(tx=>stagingCredits(tx,p));
+ expect(Number((await one(db,'SELECT credits FROM profiles WHERE id=$1',[p.id]))!.credits)).toBe(33_000_000);
+ expect(Number((await one(db,'SELECT count(*) n FROM ledger_transactions'))!.n)).toBe(1);
+ expect((await one(db,'SELECT unit FROM ledger_transactions'))!.unit).toBe('TEST_USDC');
+});
