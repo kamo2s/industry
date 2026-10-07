@@ -30,3 +30,7 @@
 .home-economy-actions{display:flex;gap:12px;align-items:center}.home-economy-actions select{width:51px;height:25px;padding:3px 5px;font-size:10px;background:var(--theme-raised);border:1px solid var(--theme-border);border-radius:4px;color:var(--theme-secondary)}.home-v2 .tape-amount:not(.muted){display:block;position:absolute;right:0;bottom:6px;font-size:9px}.home-v2 .tape-row:has(.tape-amount:not(.muted)) time{align-self:start;margin-top:4px}.home-v2 .tape-row:has(.tape-amount:not(.muted)) .tape-event{padding-right:15px}
 @media(max-width:520px){.home-economy-actions{gap:8px}.home-economy-actions .small-button{font-size:9px}.home-v2 .home-economy .terminal-title h2{font-size:13px}}
 @media(max-width:520px){.home-coin-table td:nth-child(4){display:block;grid-column:2;grid-row:3}.home-coin-table td:nth-child(5){display:block;grid-column:3/5;grid-row:3}.home-coin-table td:nth-child(6),.home-coin-table td:nth-child(7){grid-row:4}.home-coin-table td:nth-child(8){grid-row:5}}
+
+/* Accommodate the approved longer headline within the existing hero. */
+@media(min-width:1200px) and (max-width:1650px){.home-v2 .terminal-hero-copy h1{font-size:40px}}
+@media(max-width:600px){.home-v2 .terminal-hero-copy h1{font-size:44px}}

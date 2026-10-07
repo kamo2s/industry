@@ -266,3 +266,7 @@ Final homepage service disclosure verified live on desktop/mobile after 31747cd.
 
 ## Coin header CA — October 7, 2026
 Added compact mint copy control next to the profile name/ticker. Desktop/mobile visual and clipboard checks, failure fallback and tokenless exclusion pass; lint/build/typecheck pass. Evidence: qa/profile-ca/REVIEW.md. Hosted verification follows.
+
+CA rollout verified on hosted d37f1c3: desktop/mobile copy, full-address title and tokenless exclusion passed.
+## Brand emblem and headline — October 7, 2026
+Header and browser icon now use the supplied cube emblem as a transparent vector. Homepage/title copy updated. Three visual passes checked mark/hierarchy, corrected longer-headline wrapping, then reviewed 1920/1440/390 final screenshots with real read-only hosted data. Lint and production build/TypeScript pass. Evidence: qa/brand-update/REVIEW.md.

@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname,useRouter } from 'next/navigation';
 import { motion,MotionConfig } from 'framer-motion';
@@ -63,7 +64,7 @@ export function Shell({children}:{children:React.ReactNode}){
   const nav=[['Home','/'],['Coins','/coins'],['Marketplace','/marketplace'],['Launch','/launch']];
   return <MotionConfig reducedMotion="user"><Auth.Provider value={{profile,loading,demo,connect:()=>{if(!loading){setError('');setModal(true);}},refresh,logout}}>
     <a href="#main" className="skip">Skip to content</a>
-    <header className="header"><Link className="wordmark" href="/"><svg className="brand-symbol" viewBox="0 0 30 34" width="27" height="31" aria-hidden="true"><path d="M14 1 19 4v26l-5 3V1ZM23 6l5 3v16l-5 3V6ZM9 5l-5 3v6l5 3V5ZM9 20l-5-3v10l5 3V20Z" fill="currentColor"/><path d="m2 11 6 4v5l-6-4Z" fill="currentColor"/></svg> INDUSTRY</Link><nav aria-label="Primary navigation" className={drawer?'nav open':'nav'}>{nav.map(([label,href])=><Link key={href} className={(pathname===href||href==='/coins'&&pathname.startsWith('/coins/'))?'active':''} href={href}>{label}</Link>)}{profile&&<Link className="mobile-account" href="/dashboard">My Industry</Link>}</nav>
+    <header className="header"><Link className="wordmark" href="/"><Image className="brand-symbol" src="/brand/industry-emblem.svg" width={27} height={31} alt="" priority unoptimized/> INDUSTRY</Link><nav aria-label="Primary navigation" className={drawer?'nav open':'nav'}>{nav.map(([label,href])=><Link key={href} className={(pathname===href||href==='/coins'&&pathname.startsWith('/coins/'))?'active':''} href={href}>{label}</Link>)}{profile&&<Link className="mobile-account" href="/dashboard">My Industry</Link>}</nav>
       <GlobalSearch/><NotificationBell/>
       <button className="wallet-button" disabled={loading} onClick={()=>profile?router.push('/dashboard'):setModal(true)}>{profile?'My Industry':'Connect Wallet'}</button><Link className="icon-button settings-link" aria-label="Settings" href="/settings"><Settings2 size={18}/></Link><button className="icon-button menu-button" aria-expanded={drawer} aria-label={drawer?'Close navigation':'Open navigation'} onClick={()=>setDrawer(!drawer)}>{drawer?<X/>:<Menu/>}</button></header>
     <motion.main id="main" key={pathname} initial={false} animate={{opacity:1}} transition={{duration:.18}}>{children}</motion.main>
