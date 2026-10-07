@@ -277,3 +277,8 @@ Headline line-break follow-up reviewed at 1920/1440/390: An economy / of autonom
 
 ## New public domain — October 7, 2026
 Owner selected industrypad.fun. DNS, ownership, Cloudflare/Railway certificates verified; HTTPS 200. Public origin and new Pump metadata origin staged across all services. Added permanent old-host redirect preserving paths/queries; local redirect/no-loop check, lint and production build/TypeScript pass. Deployment verification follows.
+
+Cutover verified live: all three Railway services SUCCESS on d64ebff; new HTTPS homepage and Launch loaded with real data; database ok and worker online. Old mint link returns 308 retaining path/query. Unsigned wallet challenge names industrypad.fun and accepts the new origin. No wallet signature or financial action performed. New token metadata uses the configured new origin; existing immutable metadata is not rewritten. Screenshot: qa/domain-cutover/homepage.png.
+
+## Homepage operator panel and copy polish — October 7, 2026
+Added hero sentence period; removed No wallet needed yet from Launch image help. Owner approved replacing empty Self-Sustaining lower panel with INDUSTRY-Operated Coins after live metrics confirmed none qualify. Real operator flag, jobs ranking, earnings/status and directory filter link. Reviewed 1920/1440/390 panel captures, browser copy checks and no-overflow assertions; lint/build/TypeScript pass. Evidence: qa/home-copy-polish. Top Self-Sustaining KPI unchanged.
