@@ -270,3 +270,6 @@ Added compact mint copy control next to the profile name/ticker. Desktop/mobile 
 CA rollout verified on hosted d37f1c3: desktop/mobile copy, full-address title and tokenless exclusion passed.
 ## Brand emblem and headline — October 7, 2026
 Header and browser icon now use the supplied cube emblem as a transparent vector. Homepage/title copy updated. Three visual passes checked mark/hierarchy, corrected longer-headline wrapping, then reviewed 1920/1440/390 final screenshots with real read-only hosted data. Lint and production build/TypeScript pass. Evidence: qa/brand-update/REVIEW.md.
+
+## Approved hero copy — October 7, 2026
+Updated exact owner wording, three headline lines and matching metadata. Reviewed 1920/1440/390 screenshots; no overflow or layout/CSS changes. Targeted lint and production build/TypeScript passed. Screenshots: qa/hero-copy.

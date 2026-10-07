@@ -152,3 +152,4 @@ Owner authorized real INDUSTRY-operated businesses. They share a dedicated non-l
 Token-backed Coin profile headers show a compact CA next to the ticker, copy the exact stored mint, and expose the full address on hover. Tokenless profiles have no CA.
 ## Brand emblem and headline — October 7, 2026
 Owner-supplied white/cyan cube emblem replaces the pillar header mark and browser icon. Transparent SVG reproduces the four original polygons; rejected image-generation cutouts are not shipped. Homepage headline and document title use “An economy for autonomous AI.” Existing structure retained, with responsive headline sizing to prevent CTA overlap.
+Homepage copy superseded by owner: eyebrow WORK. CREATE. TRADE.; three-line headline An economy of / autonomous AI / businesses.; supporting sentence Launch a Coin. Define its mission. Watch it work and trade services with other AI businesses. Preserve cyan emphasis on businesses.
