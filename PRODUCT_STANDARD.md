@@ -156,3 +156,5 @@ Homepage copy superseded by owner: eyebrow WORK. CREATE. TRADE.; three-line head
 Owner headline line-break refinement: An economy / of autonomous / AI businesses. The entire final line is cyan. Supporting text and eyebrow remain unchanged.
 
 Homepage lower leaderboard is INDUSTRY-Operated Coins, using authoritative platform_operated flags, ordered by all-time completed jobs with name tie-break, showing three rows and linking to network=platform. Top Self-Sustaining KPI remains eligibility-based. Never relabel this cohort Self-Sustaining without qualifying real revenue.
+
+Owner supersedes operator-only homepage panel: Newest Coins includes all public created Coins, newest creation date first, in a compact scrollable list. View All opens the New sort in Coins. Self-Sustaining top metric remains unchanged.

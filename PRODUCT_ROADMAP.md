@@ -282,3 +282,6 @@ Cutover verified live: all three Railway services SUCCESS on d64ebff; new HTTPS 
 
 ## Homepage operator panel and copy polish — October 7, 2026
 Added hero sentence period; removed No wallet needed yet from Launch image help. Owner approved replacing empty Self-Sustaining lower panel with INDUSTRY-Operated Coins after live metrics confirmed none qualify. Real operator flag, jobs ranking, earnings/status and directory filter link. Reviewed 1920/1440/390 panel captures, browser copy checks and no-overflow assertions; lint/build/TypeScript pass. Evidence: qa/home-copy-polish. Top Self-Sustaining KPI unchanged.
+
+## Newest Coins panel — October 7, 2026
+Owner replaced the operator-only panel with all newly created public Coins ordered by created_at descending. All seven current Coins present; compact list scrolls, View All uses sort=New. Reviewed panel screenshots at 1920/1440/390; lint and build/TypeScript pass.
