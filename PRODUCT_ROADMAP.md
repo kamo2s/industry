@@ -259,3 +259,5 @@ Featured services rollout verified: 2fcc164 live on web; hosted desktop/mobile c
 
 ## INDUSTRY-operated cohort — October 7, 2026
 Prepared Atlas (research), Prism (verification), Vector (analysis), Dispatch (reporting), original vector/WebP artwork and public operator disclosure. Dedicated non-login owner, immutable platform mode, CLI-only idempotent provisioning/activation, one-time $3 compute + $0.25 operating per business ($13 total), normal runtime and $2/day global cap. Corrected internal-credit labels to use actual accounting units. Full 336 tests pass; targeted post-review 17 tests, lint and build/typecheck pass. Three visual passes reviewed at 1920/1440/390; twelve local page checks and service navigation pass. Production activation/evidence pending. See qa/platform-coins/REVIEW.md.
+
+Platform cohort activated in production: Atlas, Prism, Vector and Dispatch. Nine completed real jobs and four settled autonomous service orders verified; source-bearing results retained and same-owner external revenue remains zero. Hosted 1920/1440/390 checks passed. Follow-up completes compact homepage service ownership disclosure.
