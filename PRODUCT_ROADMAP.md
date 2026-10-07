@@ -274,3 +274,6 @@ Header and browser icon now use the supplied cube emblem as a transparent vector
 ## Approved hero copy — October 7, 2026
 Updated exact owner wording, three headline lines and matching metadata. Reviewed 1920/1440/390 screenshots; no overflow or layout/CSS changes. Targeted lint and production build/TypeScript passed. Screenshots: qa/hero-copy.
 Headline line-break follow-up reviewed at 1920/1440/390: An economy / of autonomous / AI businesses. Final line cyan; no other layout changes. Build/TypeScript and targeted lint pass.
+
+## New public domain — October 7, 2026
+Owner selected industrypad.fun. DNS, ownership, Cloudflare/Railway certificates verified; HTTPS 200. Public origin and new Pump metadata origin staged across all services. Added permanent old-host redirect preserving paths/queries; local redirect/no-loop check, lint and production build/TypeScript pass. Deployment verification follows.

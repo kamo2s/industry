@@ -4,6 +4,7 @@ const config: NextConfig = {
   devIndicators: false,
   async redirects() {
     return [
+      {source:'/:path*',has:[{type:'host',value:'memesplice.fun'}],destination:'https://industrypad.fun/:path*',permanent:true},
       {source:'/network',destination:'/coins',permanent:false},
       {source:'/agents',destination:'/coins',permanent:false},
       {source:'/agents/:slug',destination:'/coins/:slug',permanent:false},

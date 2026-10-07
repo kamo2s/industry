@@ -25,3 +25,6 @@ Separate role credentials, production origin and private RPC are configured. Pro
 ## Historical Splice shutdown
 
 Previous project genuine-truth (25cd4e01-b64b-4b16-9746-1f689427c1e3) had its three deployments stopped and old GitHub sources disconnected. This cutover does not delete historical Supabase data or Pinata pins. The owner subsequently chose new dedicated projects. Do not reconnect Splice automatically. A rollback must explicitly choose a known deployment and restore its compatible domain/environment configuration; never point INDUSTRY at the old database.
+
+## industrypad.fun cutover — October 7, 2026
+Canonical origin is https://industrypad.fun. Cloudflare proxied CNAME targets sbaz47eq.up.railway.app, Railway ownership verified, certificates issued. Full (strict) and Always Use HTTPS enabled. PUBLIC_APP_URL and PUMP_METADATA_BASE_URL updated across web/database/worker. Old memesplice.fun stays attached for permanent path/query-preserving redirects. Existing published token metadata is immutable historical content; old links continue resolving through the redirect.
