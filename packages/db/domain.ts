@@ -13,6 +13,7 @@ import {liveOperations,recordOperation} from './operations';
 import {readBrowserCapture,storeBrowserCapture} from './captures';
 import { notifyOwner } from './notifications';
 import { economyOverview } from './macro';
+import {personalEconomy} from './personal-economy';
 import { feePolicy,feePolicySchema,allocateDevelopmentFee } from './fee-policy';
 import { Token2022FeeRouting } from '../agent/fee-routing';
 import { PumpLaunchService } from '../pump/launch';
@@ -176,6 +177,7 @@ export class Domain {
         const row=(await one(tx,`INSERT INTO rate_limits(key,hits,reset_at) VALUES($1,1,now()+interval '1 minute') ON CONFLICT(key) DO UPDATE SET hits=CASE WHEN rate_limits.reset_at<now() THEN 1 ELSE rate_limits.hits+1 END,reset_at=CASE WHEN rate_limits.reset_at<now() THEN now()+interval '1 minute' ELSE rate_limits.reset_at END RETURNING hits`,[body.key]))!;
         return {allowed:row.hits<=(body.limit||60)};
       }
+      if(op==='economy/personal'){ensure(profile,'UNAUTHORIZED','Connect your wallet to view your Coin economy',401);return personalEconomy(tx,profile.id);}
       if(op==='economy')return {...await economyOverview(tx),pumpFees:await pumpFinancials(tx)};
       if(op==='pump/financials'){const business=await one(tx,"SELECT business_id FROM agents WHERE id=$1 AND (visibility='public' OR creator_profile_id=$2)",[jid.parse(body.id),profile?.id||null]);ensure(business,'NOT_FOUND','Business not found',404);return (await pumpFinancials(tx,business.business_id))[0]||null;}
       if(op==='treasury/policy')return feePolicy(tx);

@@ -244,3 +244,8 @@ Theme rollout verified: 969abf1 live on all services; 42 hosted desktop/mobile v
 
 ## Black theme selective saturation refinement — October 7, 2026
 Kept existing black layout; strengthened semantic data colors, localized number glows, fixed category color mapping, purple Self-Sustaining pills, blue waiting and restrained cyan hover. Globe coast/node contrast increased slightly. Three visual passes and browser state assertions passed with lint/typecheck/build. Evidence: qa/black-theme-refinement/REVIEW.md. Hosted verification follows.
+
+Refinement rollout verified: 2a1fe09 live on all services, public health healthy, all 18 hosted main-page desktop/mobile checks passed. Layout geometry comparison remains unchanged.
+
+## Personal Coin economy homepage — October 7, 2026
+Replaced lower macro panel with authenticated Your Coin Economy; retained global top KPIs and Live Network. Separate bounded aggregate endpoint, owner isolation, private Coins, funding/unit exclusions, net after refunds, account reset and honest empty/error states. 332 tests, lint/typecheck/build and reviewed 1920/1440/390 browser states pass. Evidence: qa/personal-economy/REVIEW.md. Hosted verification follows.

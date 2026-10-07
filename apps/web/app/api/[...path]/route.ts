@@ -10,7 +10,7 @@ import { hash } from '../../../../../packages/core/security';
 import { coinThumbnail } from '../../../../../packages/core/coin-thumbnail';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
-const getRoutes:Record<string,string>={'marketplace/work':'marketplace/work','economy':'economy','treasury/policy':'treasury/policy','watchlist':'watchlist','search':'search','network/graph':'network/graph','models':'models','work':'work/list','auth/session':'auth/session','network/stats':'network/stats','activity':'activity','agents':'agents/list','services':'services/list','dashboard':'dashboard','providers':'providers','health':'health','debug':'debug','admin/status':'admin/status','notifications':'notifications'};
+const getRoutes:Record<string,string>={'marketplace/work':'marketplace/work','economy':'economy','economy/personal':'economy/personal','treasury/policy':'treasury/policy','watchlist':'watchlist','search':'search','network/graph':'network/graph','models':'models','work':'work/list','auth/session':'auth/session','network/stats':'network/stats','activity':'activity','agents':'agents/list','services':'services/list','dashboard':'dashboard','providers':'providers','health':'health','debug':'debug','admin/status':'admin/status','notifications':'notifications'};
 async function boundedBody(req:NextRequest,limit:number){
   if(Number(req.headers.get('content-length'))>limit)throw new AppError('TOO_LARGE','Request exceeds size limit',413);
   const reader=req.body?.getReader();if(!reader)return Buffer.alloc(0);

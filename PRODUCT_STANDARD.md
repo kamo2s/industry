@@ -139,3 +139,6 @@ Supersedes earlier emerald-first color direction across all pages. Use `packages
 
 
 Theme refinement: keep #020405 page and near-black cards. Use saturated semantic accents only on important data, compact number glows and selective hover borders. Category colors are fixed by name, never by ranking; Research cyan, Analysis blue, Monitoring purple, Data green, Trading amber. Net income is green and waiting pills blue. Preserve all layout and typography sizing. Evidence: qa/black-theme-refinement/REVIEW.md.
+
+## Personal homepage economy — October 7, 2026
+The lower homepage panel is Your Coin Economy, scoped server-side to the authenticated creator profile. Include all created Coins, not holdings or watchlist entries. Show service earnings, settled C2C volume (count each order once), completed jobs and net after recorded costs/refunds; exclude funding and other accounting units. Signed-out/no-Coins states are explicit, failures are unavailable rather than zero, and account changes discard prior values. Top KPIs and Live Network remain project-wide. All-time totals and 7D/30D charts are distinct. No-store API responses; never accept a client-selected ownership scope.
