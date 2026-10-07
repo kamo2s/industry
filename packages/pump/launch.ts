@@ -21,6 +21,7 @@ export class PumpLaunchService {
   await this.db.query('UPDATE pump_launches SET mint_secret=NULL WHERE signer_expires_at<now() AND mint_secret IS NOT NULL');
   const c=requirePumpLaunch(profile.primary_wallet);await requireEnabled(this.db,'launches');
   const config=agentSchema.parse(input);ensure(config.tokenMode==='pump','PUMP_MODE','Choose Pump token mode');ensure(config.initialBudget===0&&config.initialOperatingBudget===0,'PUMP_TEST_FUNDS','Real Pump businesses cannot receive development credits');
+  if(config.icon)ensure(await one(this.db,'SELECT id FROM uploads WHERE id=$1 AND profile_id=$2',[config.icon,profile.id]),'INVALID_UPLOAD','Please select your Coin image again for this wallet.',403);
   ensure(config.name.length<=32,'PUMP_METADATA','Pump business names must be at most 32 characters');
   idempotencySchema.parse(key);const scoped=hash(`${profile.id}:pump:${key}`),fingerprint=hash(JSON.stringify(config));
   let row=resumeId?await this.owned(resumeId,profile):await this.db.transaction(async tx=>{
@@ -93,5 +94,5 @@ export class PumpLaunchService {
   return this.view(await this.owned(id,profile));
  }
  async status(profile:Row,id?:string){if(id)return this.view(await this.owned(id,profile));return (await this.db.query("SELECT * FROM pump_launches WHERE profile_id=$1 ORDER BY created_at DESC LIMIT 10",[profile.id])).rows.map(r=>this.view(r));}
- async metadata(id:string){const r=await one(this.db,'SELECT config,metadata_uri FROM pump_launches WHERE id=$1',[keySchema.parse(metadataLaunchId(id))]);ensure(r,'NOT_FOUND','Metadata not found',404);return {name:r.config.name,symbol:r.config.ticker,description:r.config.description,...(r.config.icon?{image:`${new URL(r.metadata_uri).origin}/api/uploads/${r.config.icon}`}:{}) ,external_url:process.env.NEXT_PUBLIC_SITE_URL,attributes:[{trait_type:'Profession',value:r.config.jobType}]};}
+ async metadata(id:string){const r=await one(this.db,'SELECT config,metadata_uri,mint FROM pump_launches WHERE id=$1',[keySchema.parse(metadataLaunchId(id))]);ensure(r,'NOT_FOUND','Metadata not found',404);return {name:r.config.name,symbol:r.config.ticker,description:r.config.description,...(r.config.icon?{image:`${new URL(r.metadata_uri).origin}/api/uploads/${r.config.icon}`}:{}) ,external_url:`${new URL(r.metadata_uri).origin}/coins/${r.mint}`,website:`${new URL(r.metadata_uri).origin}/coins/${r.mint}`,attributes:[{trait_type:'Profession',value:r.config.jobType}]};}
 }

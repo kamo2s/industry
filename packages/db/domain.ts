@@ -97,7 +97,7 @@ export class Domain {
     if(c.initialOperatingBudget>0){ensure(testEconomy(),'TEST_FUNDING_DISABLED','Initial test allocation requires demo mode');const transaction=await fundBusiness(tx,profile,id,micro(c.initialOperatingBudget),'BUSINESS_OPERATING',`initial-operating:${id}`);await ledger(tx,id,'credit','funding',micro(c.initialOperatingBudget),`initial-operating:${id}`,{transaction,account:'BUSINESS_OPERATING'});}
     await tx.query(`INSERT INTO jobs(agent_id,type,trigger_type,payload,idempotency_key) VALUES($1,'BOOT','creation',$2,$3)`,[id,JSON.stringify({input:{topic:c.scope||c.mission}}),`boot:${id}`]);
     await event(tx,id,'created','Agent created; first operational run queued');
-    return {id,slug,businessId:id};
+    return {id,slug:pump?c.mint:slug,businessId:id};
   }
   async addService(tx: Queryable, agentId: string, input: unknown) {
     const s=serviceSchema.parse(input);
@@ -187,7 +187,7 @@ export class Domain {
         return Promise.all(rows.map(a=>agentView(tx,a)));
       }
       if(op==='agents/get') {
-        const a=await one(tx,"SELECT * FROM agents WHERE (slug=$1 OR id::text=$1) AND visibility='public'",[body.id]);
+        const a=await one(tx,"SELECT a.* FROM agents a LEFT JOIN solana_tokens t ON t.id=a.token_id WHERE (a.slug=$1 OR a.id::text=$1 OR t.mint=$1) AND a.visibility='public'",[body.id]);
         ensure(a,'NOT_FOUND','Agent not found',404);
         const own=profile?.id===a.creator_profile_id;
         const jobs=(await tx.query('SELECT id,type,status,output,last_error,created_at,finished_at FROM jobs WHERE agent_id=$1 ORDER BY created_at DESC LIMIT 15',[a.id])).rows.map(j=>({...j,output:own||a.config.publicOutput?j.output:null}));

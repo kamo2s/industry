@@ -90,3 +90,17 @@ it('recovers unknown launch confirmation exactly once and retries the same mint 
  chain={slot:150,meta:{err:null},transaction:{message:signed.message}};const routing=vi.spyOn(adapter,'routingState').mockResolvedValue({evidence:{...state,mint:original},config,curve:{} as any});
  const recovered=await launch.recover(profile,p.id);expect(recovered.status).toBe('verified');await launch.recover(profile,p.id);expect(activate).toHaveBeenCalledTimes(1);await expect(launch.cancel(profile,p.id)).rejects.toThrow('Verified');expect((await one(db,'SELECT mint_secret FROM pump_launches WHERE id=$1',[p.id]))!.mint_secret).toBeNull();routing.mockRestore();vi.unstubAllEnvs();
 });
+
+it('resolves a token profile by exact mint and keeps its legacy slug usable',async()=>{
+ const a=(await one(db,'SELECT * FROM agents WHERE id=$1',[business]))!,address=Keypair.generate().publicKey.toBase58();
+ const token=(await one(db,"INSERT INTO solana_tokens(mint,network,name,symbol,decimals,official) VALUES($1,'devnet','Routing test','ROUTE',6,true) RETURNING id",[address]))!;
+ const b=(await one(db,"INSERT INTO businesses(creator_profile_id,mode,mandate) VALUES($1,'DEVNET_TOKEN','Route test') RETURNING id",[a.creator_profile_id]))!;
+ const created=(await one(db,"INSERT INTO agents(business_id,creator_profile_id,token_id,slug,name,description,mission,job_type,category,config) VALUES($1,$2,$3,'route-legacy','Route test','Route test','Route test','Researcher','Research',$4) RETURNING id",[b.id,a.creator_profile_id,token.id,JSON.stringify(a.config)]))!;
+ const domain=new Domain(db),byMint=await domain.dispatch('agents/get',{id:address}),bySlug=await domain.dispatch('agents/get',{id:'route-legacy'});expect(byMint.agent.id).toBe(created.id);expect(bySlug.agent.id).toBe(created.id);expect(byMint.agent.slug).toBe(address);expect(bySlug.agent.slug).toBe(address);await expect(domain.dispatch('agents/get',{id:address.toLowerCase()})).rejects.toThrow('not found');
+});
+
+it('token metadata links the exact mint to its INDUSTRY page',async()=>{
+ const row=(await one(db,'SELECT id,mint FROM pump_launches LIMIT 1'))!;
+ const service=new PumpLaunchService(db,async()=>({})),metadata=await service.metadata(row.id);
+ expect(metadata.external_url).toBe(`https://industry.example/coins/${row.mint}`);expect(metadata.website).toBe(metadata.external_url);
+});

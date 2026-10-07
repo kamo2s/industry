@@ -16,14 +16,14 @@ export function PumpReceipt({operation,onNew}:{operation:PumpOperation;onNew?:()
   <div className="pl-receipt-heading">{view.complete?<CheckCircle2 size={34}/>:<LoaderCircle size={30} className="pl-spin"/>}<div><span className="eyebrow">{view.complete?'LAUNCH COMPLETE':'ON-CHAIN CONFIRMATION'}</span><h3>{view.title}</h3></div></div>
   <p>{view.description}</p>
   <div className="pl-mint"><span>Token mint address</span><code>{operation.mint}</code><button className="button" onClick={()=>void copy()} aria-label="Copy mint address">{copied?<Check size={15}/>:<Copy size={15}/>} {copied?'Copied':'Copy'}</button></div><ErrorNotice error={copyError}/>
-  <div className="pl-links">{view.complete&&<a className="button primary" href={'/coins/'+operation.result!.slug}>Open Coin <ExternalLink size={15}/></a>}{view.pumpUrl&&<a className="button" href={view.pumpUrl} target="_blank" rel="noopener noreferrer">View on Pump.fun <ExternalLink size={14}/></a>}{view.tokenUrl&&<a className="button" href={view.tokenUrl} target="_blank" rel="noopener noreferrer">Solscan <ExternalLink size={14}/></a>}{view.transactionUrl&&<a className="button" href={view.transactionUrl} target="_blank" rel="noopener noreferrer">Transaction <ExternalLink size={14}/></a>}</div>
+  <div className="pl-links">{view.complete&&<a className="button primary" href={'/coins/'+operation.mint}>Open Coin <ExternalLink size={15}/></a>}{view.pumpUrl&&<a className="button" href={view.pumpUrl} target="_blank" rel="noopener noreferrer">View on Pump.fun <ExternalLink size={14}/></a>}{view.tokenUrl&&<a className="button" href={view.tokenUrl} target="_blank" rel="noopener noreferrer">Solscan <ExternalLink size={14}/></a>}{view.transactionUrl&&<a className="button" href={view.transactionUrl} target="_blank" rel="noopener noreferrer">Transaction <ExternalLink size={14}/></a>}</div>
   {(operation.initialBuySol||0)>0&&<p className="pl-buy-receipt">Initial buy confirmed · maximum {operation.initialBuySol} SOL{operation.initialBuyTokens&&<> · {(Number(operation.initialBuyTokens)/1e6).toLocaleString('en-US',{maximumFractionDigits:6})} tokens to your wallet</>}</p>}
   {view.complete&&<div className="pl-funding"><ShieldCheck size={18}/><p>Creator-fee routing is verified. Your Coin begins work when it has AI credits; buying tokens does not directly add Compute or Operating credits.</p></div>}
   {view.complete&&onNew&&<button className="pl-text-button" onClick={onNew}>Launch another Coin →</button>}
  </section>;
 }
 
-export function PumpLaunch({draft,requestKey,blocked,operation,onOperation,onBusy,onBuyChange}:{draft:AgentInput;requestKey:string;blocked?:string;operation:PumpOperation|null;onOperation:(op:PumpOperation|null)=>void;onBusy:(value:boolean)=>void;onBuyChange:(value:number)=>void}){
+export function PumpLaunch({beforePrepare,draft,requestKey,blocked,operation,onOperation,onBusy,onBuyChange}:{beforePrepare?:()=>Promise<AgentInput>;draft:AgentInput;requestKey:string;blocked?:string;operation:PumpOperation|null;onOperation:(op:PumpOperation|null)=>void;onBusy:(value:boolean)=>void;onBuyChange:(value:number)=>void}){
  const auth=useAuth(),settings=useData('pump/config'),[busy,setBusy]=useState(false),[phase,setPhase]=useState(''),[error,setError]=useState(''),[buyText,setBuyText]=useState(String(draft.initialBuySol||0));
  const callbacks=useRef({onOperation,onBusy});callbacks.current={onOperation,onBusy};
  const view=operation?pumpLaunchView(operation):null;
@@ -40,7 +40,8 @@ export function PumpLaunch({draft,requestKey,blocked,operation,onOperation,onBus
    if(kind==='recover'){setPhase('Checking confirmation…');accept(await api('pump/recover',{id:operation!.id}));return;}
    if(!operation&&(blocked||buyInvalid))throw new Error(blocked||'Enter a valid SOL amount between 0 and 100, with up to nine decimal places.');
    setPhase('Preparing your launch…');
-   const r:PumpOperation=await (operation?api('pump/resume',{id:operation.id}):api('pump/prepare',{...draft,initialBuySol:amount,tokenMode:'pump',initialBudget:0,initialOperatingBudget:0},requestKey));accept(r);if(r.status!=='prepared')return;
+   const preparedDraft=!operation&&beforePrepare?await beforePrepare():draft;
+   const r:PumpOperation=await (operation?api('pump/resume',{id:operation.id}):api('pump/prepare',{...preparedDraft,initialBuySol:amount,tokenMode:'pump',initialBudget:0,initialOperatingBudget:0},requestKey));accept(r);if(r.status!=='prepared')return;
    const wallet=getWallets().get().find(w=>w.accounts.some(a=>a.address===auth.profile!.wallet)&&'solana:signTransaction' in w.features),account=wallet?.accounts.find(a=>a.address===auth.profile!.wallet);
    if(!wallet||!account)throw new Error('Reconnect your Solana wallet to approve this launch.');
    const bytes=Uint8Array.from(atob(r.transaction!),c=>c.charCodeAt(0)),prepared=VersionedTransaction.deserialize(bytes);
