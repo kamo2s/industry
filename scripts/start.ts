@@ -30,8 +30,8 @@ launch(['--import','tsx','packages/db/server.ts']);
 let ready=false;
 for(let i=0;i<60;i++) {try {const r=await fetch(`http://127.0.0.1:${env.DB_PORT||4318}/rpc`,{method:'POST',headers:{'Authorization':`Bearer ${env.INTERNAL_API_SECRET}`,'Content-Type':'application/json'},body:JSON.stringify({op:'health'})});if(r.ok){ready=true;break;}}catch{}await new Promise(r=>setTimeout(r,500));}
 if(!ready) {console.error('Database startup failed.');stop(1);} else {
-  const restricted={...env,PUMP_COLLECTOR_KEYPAIR_FILE:'',PUMP_COLLECTOR_API_SECRET:'',PYTH_API_KEY:'',WALLET_ENCRYPTION_KEY:'',INTERNAL_API_SECRET:'',DATABASE_URL:'',SUPABASE_SERVICE_ROLE_KEY:'',SESSION_SECRET:''};
+  const restricted={...env,PUMP_COLLECTOR_KEYPAIR_FILE:'',PUMP_COLLECTOR_KEYPAIR_JSON:'',PUMP_COLLECTOR_API_SECRET:'',PYTH_API_KEY:'',WALLET_ENCRYPTION_KEY:'',INTERNAL_API_SECRET:'',DATABASE_URL:'',SUPABASE_SERVICE_ROLE_KEY:'',SESSION_SECRET:''};
   launch(['--import','tsx','apps/worker/index.ts'],restricted);
   launch(['--import','tsx','apps/collector/index.ts'],{NODE_ENV:env.NODE_ENV,PATH:env.PATH,SystemRoot:env.SystemRoot,APP_MODE:env.APP_MODE,INTERNAL_API_URL:env.INTERNAL_API_URL,DB_PORT:env.DB_PORT,PUMP_COLLECTOR_API_SECRET:env.PUMP_COLLECTOR_API_SECRET});
-  launch([path.resolve('node_modules/next/dist/bin/next'),process.argv.includes('--production')?'start':'dev','apps/web','--hostname','127.0.0.1','--port',env.PORT||'3000'],{...env,OPENAI_API_KEY:'',OPENROUTER_API_KEY:'',SEARCH_PROVIDER_API_KEY:'',BROWSERBASE_API_KEY:'',PUMP_COLLECTOR_KEYPAIR_FILE:'',PUMP_COLLECTOR_API_SECRET:'',PYTH_API_KEY:'',DATABASE_URL:'',SUPABASE_SERVICE_ROLE_KEY:'',WORKER_API_SECRET:'',WALLET_ENCRYPTION_KEY:''});
+  launch([path.resolve('node_modules/next/dist/bin/next'),process.argv.includes('--production')?'start':'dev','apps/web','--hostname','127.0.0.1','--port',env.PORT||'3000'],{...env,OPENAI_API_KEY:'',OPENROUTER_API_KEY:'',SEARCH_PROVIDER_API_KEY:'',BROWSERBASE_API_KEY:'',PUMP_COLLECTOR_KEYPAIR_FILE:'',PUMP_COLLECTOR_KEYPAIR_JSON:'',PUMP_COLLECTOR_API_SECRET:'',PYTH_API_KEY:'',DATABASE_URL:'',SUPABASE_SERVICE_ROLE_KEY:'',WORKER_API_SECRET:'',WALLET_ENCRYPTION_KEY:''});
 }
