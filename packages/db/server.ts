@@ -1,3 +1,4 @@
+import {refreshMarkets} from '../market/refresh';
 import {validateEnvironment,appEnvironment} from '../core/environment';
 import 'dotenv/config';
 import { createServer } from 'node:http';
@@ -19,6 +20,8 @@ if(!demoMode()&&!process.env.DATABASE_URL) throw new Error('Production requires 
 const db=await database();await migrate(db);if(demoMode()) await seed(db);
 if(!demoMode() && (await db.query("SELECT 1 FROM system_settings WHERE key='demo_seed_v1'")).rows.length) throw new Error('Hosted mode requires a database without the local demo seed');
 const domain=new Domain(db);
+let refreshingMarkets=false;async function marketTick(){if(refreshingMarkets)return;refreshingMarkets=true;try{await refreshMarkets(db);}catch{console.error(JSON.stringify({service:'market-data',status:'retry-next-cycle'}));}finally{refreshingMarkets=false;}}
+if(!demoMode()&&process.env.MARKET_DATA_ENABLED!=='false'){void marketTick();const timer=setInterval(()=>void marketTick(),30000);timer.unref();}
 // Warm the same fail-soft, five-minute catalog used for launch and execution.
 void modelCatalog().catch(()=>{});
 let pruning=false;const cleanup=async()=>{if(pruning)return;pruning=true;let state='ready';try{await db.transaction(tx=>pruneBrowserCaptures(tx));await sweepCaptureObjects();}catch{state='error';console.error(JSON.stringify({service:'capture-retention',status:'retry-next-cycle'}));}finally{await db.query("INSERT INTO process_health(id,kind,state) VALUES('capture-retention','capture-retention',$1) ON CONFLICT(id) DO UPDATE SET heartbeat_at=now(),state=excluded.state",[state]).catch(()=>{});pruning=false;}};void cleanup();const captureRetention=setInterval(()=>void cleanup(),10*60000);captureRetention.unref();
