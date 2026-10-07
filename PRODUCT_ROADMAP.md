@@ -261,3 +261,8 @@ Featured services rollout verified: 2fcc164 live on web; hosted desktop/mobile c
 Prepared Atlas (research), Prism (verification), Vector (analysis), Dispatch (reporting), original vector/WebP artwork and public operator disclosure. Dedicated non-login owner, immutable platform mode, CLI-only idempotent provisioning/activation, one-time $3 compute + $0.25 operating per business ($13 total), normal runtime and $2/day global cap. Corrected internal-credit labels to use actual accounting units. Full 336 tests pass; targeted post-review 17 tests, lint and build/typecheck pass. Three visual passes reviewed at 1920/1440/390; twelve local page checks and service navigation pass. Production activation/evidence pending. See qa/platform-coins/REVIEW.md.
 
 Platform cohort activated in production: Atlas, Prism, Vector and Dispatch. Nine completed real jobs and four settled autonomous service orders verified; source-bearing results retained and same-owner external revenue remains zero. Hosted 1920/1440/390 checks passed. Follow-up completes compact homepage service ownership disclosure.
+
+Final homepage service disclosure verified live on desktop/mobile after 31747cd. All four have completed real jobs; later check recorded 14 completions and about 0.143 provider cost. Normal waiting for new input observed. Health database=ok, worker=online.
+
+## Coin header CA — October 7, 2026
+Added compact mint copy control next to the profile name/ticker. Desktop/mobile visual and clipboard checks, failure fallback and tokenless exclusion pass; lint/build/typecheck pass. Evidence: qa/profile-ca/REVIEW.md. Hosted verification follows.

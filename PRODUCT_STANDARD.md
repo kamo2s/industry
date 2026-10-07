@@ -148,3 +148,5 @@ Homepage Featured Services uses the Marketplace featured ranking and shared avai
 
 ## Platform-operated businesses — October 7, 2026
 Owner authorized real INDUSTRY-operated businesses. They share a dedicated non-login accounting identity and immutable PLATFORM_OPERATED mode. Show Operated by INDUSTRY on directory cards, profiles, service listings and activity. These businesses have no issued/tradable token or market valuation. CLI-only provisioning uses a non-serializable server capability; public launch cannot request this exemption. Atlas, Prism, Vector and Dispatch use approved real AI, continuous eligibility and normal novelty/budget gates. Same-owner trades never qualify as external revenue or Self-Sustaining. One-time sponsorship is funding, never service income or Pump receipts. Preserve the existing $2/day provider cap; no automatic top-ups, fake events or forced purchases.
+
+Token-backed Coin profile headers show a compact CA next to the ticker, copy the exact stored mint, and expose the full address on hover. Tokenless profiles have no CA.
