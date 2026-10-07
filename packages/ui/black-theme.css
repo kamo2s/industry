@@ -1,0 +1,28 @@
+/* Palette finish only: intentionally no geometry, typography or interaction rules. */
+body,.header,.footer{background:var(--theme-page)}
+body:before,.product-theme:before{background:none}
+.header,.footer{border-color:var(--theme-border)}
+.nav>a.active:after{background:var(--theme-accent);box-shadow:0 0 10px rgba(var(--theme-accent-rgb),.3)}
+.home-v2 .panel{background:linear-gradient(135deg,var(--theme-surface),var(--theme-page));border-color:var(--theme-border)}
+.home-v2 .network-overlay{background:rgba(var(--theme-surface-rgb),.95);border-color:var(--theme-border)}
+.home-v2 .terminal-metrics>div,.home-v2 .home-macro>div{background:radial-gradient(ellipse at 100% 100%,rgba(var(--tint),.1),transparent 65%),var(--theme-page);border-color:rgba(var(--tint),.3)}
+.home-v2 .home-service .terminal-service{background:radial-gradient(ellipse at 20% 0,rgba(var(--tint),.05),transparent 65%),var(--theme-page);border-color:rgba(var(--tint),.3)}
+.mp-service-card{background:radial-gradient(ellipse at 8% 0%,color-mix(in srgb,var(--tint) 5%,transparent),transparent 70%),var(--theme-surface);border-color:color-mix(in srgb,var(--tone) 23%,var(--theme-border))}
+.mp-service-card:hover{border-color:color-mix(in srgb,var(--tone) 52%,var(--theme-border))}
+.home-status[data-status="Self-Sustaining"],.mp-status[data-status="Self-Sustaining"],.cd-status.sustaining,.cp-status.sustaining{color:var(--theme-amber);background:rgba(var(--theme-amber-rgb),.07);border-color:rgba(var(--theme-amber-rgb),.32)}
+.cd-summary-item.summary-2{--tone:var(--theme-amber);--tint:var(--theme-amber)}
+.cd-filter-dot.self-sustaining{background:var(--theme-amber)}
+.cd-heading:before{background:none}
+.cp-panel,.coin-profile .live-screen{background:linear-gradient(140deg,var(--theme-surface),var(--theme-page))}
+.coin-profile .browser-awaiting{background:radial-gradient(ellipse,rgba(var(--theme-accent-rgb),.035),transparent 68%)}
+.cp-artwork .coin-initials{background:radial-gradient(circle at 35% 20%,var(--theme-hover),var(--theme-surface))}
+.home-status[data-status="Dormant"],.home-status[data-status="Needs funding"]{background:rgba(var(--theme-amber-rgb),.07)}
+.online,.live-dot,.status-dot,.runtime-online{color:var(--theme-success)}
+.online i,.live-dot{background:var(--theme-success)}
+.button.primary,.product-theme .button.primary,.home-v2 .button.primary,.coin-profile .button.primary,.launch-flow .button.primary{background:var(--theme-accent);color:var(--theme-ink);border-color:var(--theme-accent);box-shadow:0 0 18px rgba(var(--theme-accent-rgb),.13)}
+.button.primary:hover,.product-theme .button.primary:hover,.home-v2 .button.primary:hover,.coin-profile .button.primary:hover{background:color-mix(in srgb,var(--theme-accent) 83%,var(--theme-text));color:var(--theme-ink);box-shadow:0 0 22px rgba(var(--theme-accent-rgb),.2)}
+.button.secondary{background:var(--theme-page);border-color:var(--theme-border-strong);color:var(--theme-text)}
+.button.secondary:hover{color:var(--theme-accent);border-color:var(--theme-accent)}
+:root body :is(a,button,input,select,textarea,summary):focus-visible{outline-color:var(--theme-accent)!important}
+:root body :is(input:not([type=checkbox]):not([type=radio]),textarea,select):focus{border-color:var(--theme-accent)!important;box-shadow:inset 0 0 0 1px rgba(var(--theme-accent-rgb),.25)!important}
+::selection{background:rgba(var(--theme-accent-rgb),.22);color:var(--theme-text)}

@@ -3,6 +3,11 @@ import * as THREE from 'three';
 // Every continent dot, node and connection is positioned in 3D. No map image or
 // reference screenshot is used. One point draw call handles the land surface.
 export function createNetworkGlobe(host:HTMLDivElement,land:number[][],network?:{nodes:{id:string}[];edges:{source:string;target:string}[]}|null,coasts:number[][][]=[]){
+  const style=getComputedStyle(host);
+  const palette={cyan:style.getPropertyValue('--theme-accent').trim(),blue:style.getPropertyValue('--theme-blue').trim(),dim:style.getPropertyValue('--theme-globe-dim').trim(),rim:style.getPropertyValue('--theme-globe-rim').trim(),page:style.getPropertyValue('--theme-page').trim(),white:style.getPropertyValue('--theme-text').trim()};
+  const rgb=(value:string)=>{const c=new THREE.Color(value);return c.getRGB({r:0,g:0,b:0},THREE.SRGBColorSpace);};
+  const glsl=(value:string)=>{const c=rgb(value);return `vec3(${c.r.toFixed(5)},${c.g.toFixed(5)},${c.b.toFixed(5)})`;};
+  const rgba=(value:string,alpha:number)=>{const c=rgb(value);return `rgba(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)},${alpha})`;};
   const constrained=host.clientWidth<500||navigator.hardwareConcurrency<6;
   const reduced=matchMedia('(prefers-reduced-motion: reduce)');
   const renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:'high-performance'});
@@ -33,8 +38,8 @@ export function createNetworkGlobe(host:HTMLDivElement,land:number[][],network?:
         gl_PointSize=uDpr*mix(1.1,2.15,aLand)*(0.7+aSeed*0.5)*clamp(2.5/-view.z,0.65,1.35);gl_Position=projectionMatrix*view;}`,
     fragmentShader:`varying float vAlpha; varying float vSeed; varying float vSide;
       void main(){float distance=length(gl_PointCoord-0.5);float dotShape=1.0-smoothstep(0.19,0.5,distance);
-        vec3 green=mix(vec3(0.0,0.65,0.49),vec3(0.04,0.95,0.83),vSeed); green=mix(green,vec3(.08,.22,1.0),smoothstep(-.1,.75,vSide)*.85);
-        if(vSeed>0.95)green=mix(green,vec3(0.79,0.97,0.89),0.6);gl_FragColor=vec4(green,vAlpha*dotShape);}`
+        vec3 color=mix(${glsl(palette.dim)},${glsl(palette.cyan)},vSeed); color=mix(color,${glsl(palette.blue)},smoothstep(-.1,.75,vSide)*.85);
+        if(vSeed>0.95)color=mix(color,${glsl(palette.white)},0.6);gl_FragColor=vec4(color,vAlpha*dotShape);}`
   });materials.push(pointMaterial);
   const positions:number[]=[],seeds:number[]=[],kinds:number[]=[];
   land.forEach(([lon,lat],i)=>{if(constrained&&i%2)return;const noise=Math.sin(i*127.1)*43758.5453,seed=noise-Math.floor(noise);positions.push(...location(lon+(seed-.5)*.34,lat+Math.sin(i*3.71)*.16,1.003).toArray());seeds.push(seed);kinds.push(1);});
@@ -48,7 +53,7 @@ export function createNetworkGlobe(host:HTMLDivElement,land:number[][],network?:
   const coastGeometry=new THREE.BufferGeometry();coastGeometry.setAttribute('position',new THREE.Float32BufferAttribute(coastPositions,3));geometries.push(coastGeometry);
   const coastMaterial=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
     vertexShader:'varying float vFacing;varying float vSide;void main(){vec4 p=modelViewMatrix*vec4(position,1.);vec3 n=normalize(normalMatrix*position);vFacing=dot(n,normalize(-p.xyz));vSide=n.x;gl_Position=projectionMatrix*p;}',
-    fragmentShader:'varying float vFacing;varying float vSide;void main(){vec3 c=mix(vec3(.0,.94,.69),vec3(.06,.26,1.),smoothstep(-.1,.8,vSide));float alpha=smoothstep(.0,.22,vFacing)*(.18+.48*max(vFacing,0.));gl_FragColor=vec4(c,alpha);}'
+    fragmentShader:`varying float vFacing;varying float vSide;void main(){vec3 c=mix(${glsl(palette.cyan)},${glsl(palette.blue)},smoothstep(-.1,.8,vSide));float alpha=smoothstep(.0,.22,vFacing)*(.18+.48*max(vFacing,0.));gl_FragColor=vec4(c,alpha);}`
   });materials.push(coastMaterial);earth.add(new THREE.LineSegments(coastGeometry,coastMaterial));
   const sphereGeometry=new THREE.SphereGeometry(.995,64,48);geometries.push(sphereGeometry);
   const bodyMaterial=new THREE.ShaderMaterial({uniforms,
@@ -57,7 +62,7 @@ export function createNetworkGlobe(host:HTMLDivElement,land:number[][],network?:
       void main(){vec3 normal=normalize(vNormal);float facing=max(dot(normal,normalize(-vPosition)),0.0);float rim=pow(1.0-facing,2.7);
         float light=max(dot(normal,normalize(vec3(-.65,.35,1.))),0.);float spill=0.0;
         for(int i=0;i<4;i++){vec3 d=normalize(vSurface)-uNodes[i];spill+=exp(-dot(d,d)*65.0);}
-        vec3 color=vec3(.01,.017,.019)+vec3(.005,.13,.17)*rim*light+vec3(.003,.018,.012)*spill;
+        vec3 color=${glsl(palette.page)}+${glsl(palette.rim)}*rim*light+${glsl(palette.cyan)}*.018*spill;
         gl_FragColor=vec4(color,1.0);}`
   });materials.push(bodyMaterial);earth.add(new THREE.Mesh(sphereGeometry,bodyMaterial));
   // A geometric, directionally lit atmosphere follows the sphere, not the DOM.
@@ -67,15 +72,15 @@ export function createNetworkGlobe(host:HTMLDivElement,land:number[][],network?:
     vertexShader:'varying vec3 vNormal;varying vec3 vPosition;void main(){vNormal=normalize(normalMatrix*normal);vec4 p=modelViewMatrix*vec4(position,1.);vPosition=p.xyz;gl_Position=projectionMatrix*p;}',
     fragmentShader:`uniform float uStrength;varying vec3 vNormal;varying vec3 vPosition;
       void main(){vec3 n=normalize(vNormal);float facing=abs(dot(n,normalize(-vPosition)));float rim=pow(1.0-facing,2.3)*smoothstep(0.0,.36,facing);
-        float light=.22+.78*max(dot(n,normalize(vec3(-.8,.1,1.))),0.);gl_FragColor=vec4(.015,.75,.9,rim*light*uStrength);}`
+        float light=.22+.78*max(dot(n,normalize(vec3(-.8,.1,1.))),0.);gl_FragColor=vec4(${glsl(palette.blue)},rim*light*uStrength);}`
   });materials.push(atmosphereMaterial);earth.add(new THREE.Mesh(atmosphereGeometry,atmosphereMaterial));
   // Broad additive falloff blooms bright nodes without glowing every surface dot.
   const glowCanvas=document.createElement('canvas');glowCanvas.width=128;glowCanvas.height=128;
   const ctx=glowCanvas.getContext('2d')!,gradient=ctx.createRadialGradient(64,64,0,64,64,64);
-  gradient.addColorStop(0,'rgba(246,255,251,1)');gradient.addColorStop(.04,'rgba(232,255,247,.94)');gradient.addColorStop(.12,'rgba(155,255,211,.68)');gradient.addColorStop(.27,'rgba(58,247,159,.24)');gradient.addColorStop(.52,'rgba(30,213,126,.06)');gradient.addColorStop(.76,'rgba(14,140,95,.012)');gradient.addColorStop(1,'rgba(14,140,95,0)');
+  gradient.addColorStop(0,rgba(palette.white,1));gradient.addColorStop(.04,rgba(palette.white,.94));gradient.addColorStop(.12,rgba(palette.cyan,.68));gradient.addColorStop(.27,rgba(palette.cyan,.24));gradient.addColorStop(.52,rgba(palette.blue,.06));gradient.addColorStop(.76,rgba(palette.blue,.012));gradient.addColorStop(1,rgba(palette.blue,0));
   ctx.fillStyle=gradient;ctx.fillRect(0,0,128,128);const glow=new THREE.CanvasTexture(glowCanvas);textures.push(glow);
   const nodes=coordinates.map(([lon,lat],i)=>{
-    const selected=highlighted.has(i),material=new THREE.SpriteMaterial({map:glow,color:i%4===3?0x36aaff:0x38ffca,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:true});materials.push(material);
+    const selected=highlighted.has(i),material=new THREE.SpriteMaterial({map:glow,color:i%4===3?palette.blue:palette.cyan,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:true});materials.push(material);
     const sprite=new THREE.Sprite(material);sprite.position.copy(location(lon,lat,1.014));earth.add(sprite);
     const haloMaterial=material.clone();materials.push(haloMaterial);const halo=new THREE.Sprite(haloMaterial);halo.position.copy(sprite.position);halo.scale.setScalar(selected?.29:.17);earth.add(halo);
     return {sprite,material,halo,haloMaterial,selected,phase:i*.86};
@@ -84,12 +89,12 @@ export function createNetworkGlobe(host:HTMLDivElement,land:number[][],network?:
   const routes=pairs.map(([a,b],i)=>{
     const start=nodes[a].sprite.position.clone().normalize(),end=nodes[b].sprite.position.clone().normalize(),angle=start.angleTo(end),path:THREE.Vector3[]=[];
     for(let j=0;j<=80;j++){const t=j/80,v=start.clone().multiplyScalar(Math.sin((1-t)*angle)).addScaledVector(end,Math.sin(t*angle)).divideScalar(Math.sin(angle));path.push(v.normalize().multiplyScalar(1.008+Math.sin(Math.PI*t)*Math.min(.065+(i%4)*.025,angle*.13)));}
-    const geometry=new THREE.BufferGeometry().setFromPoints(path);geometries.push(geometry);const selected=[0,2,5,8].includes(i),material=new THREE.LineBasicMaterial({color:i%3===0?0x158fff:selected?0x18ead9:0x16bfa2,transparent:true,opacity:selected?.63:.24,depthWrite:false});materials.push(material);earth.add(new THREE.Line(geometry,material));
-    const pulseMaterial=new THREE.SpriteMaterial({map:glow,color:0xe5fff0,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false});materials.push(pulseMaterial);const pulse=new THREE.Sprite(pulseMaterial);pulse.scale.setScalar(.058);pulse.visible=false;earth.add(pulse);
+    const geometry=new THREE.BufferGeometry().setFromPoints(path);geometries.push(geometry);const selected=[0,2,5,8].includes(i),material=new THREE.LineBasicMaterial({color:i%3===0?palette.blue:selected?palette.cyan:palette.dim,transparent:true,opacity:selected?.63:.24,depthWrite:false});materials.push(material);earth.add(new THREE.Line(geometry,material));
+    const pulseMaterial=new THREE.SpriteMaterial({map:glow,color:palette.white,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false});materials.push(pulseMaterial);const pulse=new THREE.Sprite(pulseMaterial);pulse.scale.setScalar(.058);pulse.visible=false;earth.add(pulse);
     const trailMaterial=pulseMaterial.clone();materials.push(trailMaterial);const trail=new THREE.Sprite(trailMaterial);trail.scale.setScalar(.045);trail.visible=false;earth.add(trail);
     return {path,pulse,trail,trailMaterial,material:pulseMaterial,offset:i*2.85,enabled:selected||i===9};
   });
-  for(let ring=0;ring<2;ring++){const points=Array.from({length:181},(_,i)=>new THREE.Vector3(Math.cos(i*Math.PI/90)*1.18,0,Math.sin(i*Math.PI/90)*1.18));const geometry=new THREE.BufferGeometry().setFromPoints(points);geometries.push(geometry);const material=new THREE.LineBasicMaterial({color:0x1d7255,transparent:true,opacity:.025,depthWrite:false});materials.push(material);const line=new THREE.Line(geometry,material);line.rotation.set(ring?.5:-.42,0,ring?.25:-.15);earth.add(line);}
+  for(let ring=0;ring<2;ring++){const points=Array.from({length:181},(_,i)=>new THREE.Vector3(Math.cos(i*Math.PI/90)*1.18,0,Math.sin(i*Math.PI/90)*1.18));const geometry=new THREE.BufferGeometry().setFromPoints(points);geometries.push(geometry);const material=new THREE.LineBasicMaterial({color:palette.dim,transparent:true,opacity:.025,depthWrite:false});materials.push(material);const line=new THREE.Line(geometry,material);line.rotation.set(ring?.5:-.42,0,ring?.25:-.15);earth.add(line);}
   let visible=true,dirty=true,elapsed=0,last=0,frameBudget=0,frames=0,windowStart=0,diagnosticTime=0;
   const world=new THREE.Vector3(),look=new THREE.Vector3(),normal=new THREE.Vector3();
   const resize=()=>{const w=host.clientWidth,h=host.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.position.set(0,0,3.9);camera.updateProjectionMatrix();dirty=true;};

@@ -234,3 +234,8 @@ Hosted follow-up verified: f4cfaa3 / 707bc1f deployed on all services, health he
 
 ## Market data ingestion — October 7, 2026
 Added bounded DEX Screener snapshots plus finalized active Pump curve valuation fallback with fresh SOL/USD pricing. Exact mint/pool matching, nullable values, stale hiding and durable refresh claims covered by tests. All 329 tests, lint, typecheck and build pass; desktop/mobile QA reviewed, including mobile hidden-field correction. Hosted rollout verification pending. Evidence: qa/market-data/REVIEW.md. Fee collection/accounting unchanged.
+
+Market rollout verified: ea87689 live on all three services, healthy database/worker; production snapshots for SIGNAL, Patch and stack refreshed automatically across two cycles. Hosted desktop/mobile homepage, directory and expanded mint profile screenshots reviewed. No credentials or owner action required for market display. Collector remains outside this change.
+
+## Shared black-first theme — October 7, 2026
+Applied centralized near-black/cyan colors across all pages, with blue/purple/amber metrics and restrained surfaces. Globe retains its behavior with cyan/blue materials. Three visual refinement passes, 14-route desktop/mobile checks, modal/filter/launch interactions and lint/typecheck/production build passed. Measured geometry unchanged; existing layout/type/motion declarations preserved. No data or backend changes. Evidence: qa/black-theme/REVIEW.md. Hosted verification follows deployment.

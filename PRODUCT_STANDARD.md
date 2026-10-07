@@ -133,3 +133,6 @@ Owner explicitly authorized public wallet-signed Pump launches. PUMP_PUBLIC_LAUN
 
 ## Sourced market display — October 7, 2026
 Market cap and trading volume are separate from business earnings and fee funding. Refresh official public mainnet tokens in the background; render nullable fields independently, expire observations after ten minutes, and attribute sources. Curve reserve valuation with a fresh centralized exchange quote is display-only and must never weaken fee receipt conversion policy. Do not substitute FDV or fabricate zero volume. Mobile homepage retains both market fields.
+
+## Black-first shared theme — October 7, 2026
+Supersedes earlier emerald-first color direction across all pages. Use `packages/ui/palette.css` as the canonical color registry: nearly black page, charcoal surfaces, white text, blue-gray separators and cyan brand controls. Blue identifies financial charts, purple jobs/activity, amber Self-Sustaining, green success/online and red errors. Keep category tinting faint: colored light on black surfaces, not filled colored panels. Globe materials consume the same tokens and retain transparent surroundings. Preserve approved layout, typography, copy and behavior; theme changes must not alter data or state semantics. Small muted labels use a brighter neutral where needed for readability. Evidence: `qa/black-theme/REVIEW.md`.

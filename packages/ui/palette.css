@@ -1,0 +1,39 @@
+/* Shared black-first palette. Components keep their existing geometry and semantics. */
+:root {
+  --theme-page: #020405;
+  --theme-surface: #060b0e;
+  --theme-raised: #091014;
+  --theme-hover: #0c171d;
+  --theme-ink: #020405;
+  --theme-text: #f4f7f8;
+  --theme-secondary: #9aa8b2;
+  --theme-muted: #7b8b96;
+  --theme-subtle: #64727c;
+  --theme-border: #1b2c35;
+  --theme-border-strong: #304651;
+  --theme-accent: #00e5f0;
+  --theme-blue: #29adff;
+  --theme-purple: #bd7aff;
+  --theme-amber: #f4c653;
+  --theme-success: #36db94;
+  --theme-error: #f27c88;
+  --theme-accent-rgb: 0,229,240;
+  --theme-blue-rgb: 41,173,255;
+  --theme-purple-rgb: 189,122,255;
+  --theme-amber-rgb: 244,198,83;
+  --theme-success-rgb: 54,219,148;
+  --theme-error-rgb: 242,124,136;
+  --theme-text-rgb: 244,247,248;
+  --theme-border-rgb: 27,44,53;
+  --theme-page-rgb: 2,4,5;
+  --theme-surface-rgb: 6,11,14;
+  --theme-raised-rgb: 9,16,20;
+  --theme-secondary-rgb: 154,168,178;
+  --theme-muted-rgb: 123,139,150;
+  --theme-subtle-rgb: 100,114,124;
+  --theme-border-strong-rgb: 48,70,81;
+  --theme-hover-rgb: 12,23,29;
+  --theme-ink-rgb: 2,4,5;
+  --theme-globe-dim: #007cad;
+  --theme-globe-rim: #002237;
+}

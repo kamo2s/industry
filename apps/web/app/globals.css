@@ -1,3 +1,4 @@
+@import "../../../packages/ui/palette.css";
 @import "../../../packages/ui/theme.css";
 @import "../../../packages/ui/reconstruction.css";
 @import "../../../packages/ui/terminal.css";
@@ -12,12 +13,13 @@
 @import "../../../packages/ui/launch-flow.css";
 @import "../../../packages/ui/coin-profile.css";
 @import "../../../packages/ui/pdf-fixes.css";
+@import "../../../packages/ui/black-theme.css";
 
 /* Business economy additions use the existing terminal surfaces and scale. */
-.notification-bell{position:relative;flex-shrink:0}.notification-bell>span{position:absolute;top:-2px;right:-3px;background:#46efb0;color:#08100c;border-radius:8px;font-size:9px;padding:1px 4px}
-.notification-row{display:flex;justify-content:space-between;gap:20px;padding:18px 12px;border-bottom:1px solid #ffffff0c}.notification-row small{display:block;margin-top:7px;color:var(--muted)}.notification-row.unread{background:#ffffff03;border-left:2px solid #46efb0}.notification-row strong{font-size:13px;font-weight:500}
+.notification-bell{position:relative;flex-shrink:0}.notification-bell>span{position:absolute;top:-2px;right:-3px;background:var(--theme-accent);color:var(--theme-ink);border-radius:8px;font-size:9px;padding:1px 4px}
+.notification-row{display:flex;justify-content:space-between;gap:20px;padding:18px 12px;border-bottom:1px solid rgba(var(--theme-text-rgb),0.047)}.notification-row small{display:block;margin-top:7px;color:var(--muted)}.notification-row.unread{background:rgba(var(--theme-text-rgb),0.012);border-left:2px solid var(--theme-accent)}.notification-row strong{font-size:13px;font-weight:500}
 .macro-charts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.macro-charts h3{font-size:14px}.macro-charts small{color:var(--muted)}.macro-charts svg{height:130px;width:100%}
-.money-flow{display:grid;grid-template-columns:1fr 24px 1fr 24px 1.6fr;gap:18px;align-items:center;padding:25px 0}.money-flow strong,.money-flow small,.money-flow span{display:block}.money-flow strong{font-size:25px;margin:10px 0}.money-flow span,.money-flow small{font-size:12px;color:var(--muted)}.money-flow .flow-arrow{font-size:22px;color:#46efb0}.flow-branches p{display:flex;justify-content:space-between;border-bottom:1px solid #ffffff12;padding:10px 0;gap:15px}.flow-branches b{color:#46efb0;white-space:nowrap}
+.money-flow{display:grid;grid-template-columns:1fr 24px 1fr 24px 1.6fr;gap:18px;align-items:center;padding:25px 0}.money-flow strong,.money-flow small,.money-flow span{display:block}.money-flow strong{font-size:25px;margin:10px 0}.money-flow span,.money-flow small{font-size:12px;color:var(--muted)}.money-flow .flow-arrow{font-size:22px;color:var(--theme-accent)}.flow-branches p{display:flex;justify-content:space-between;border-bottom:1px solid rgba(var(--theme-text-rgb),0.071);padding:10px 0;gap:15px}.flow-branches b{color:var(--theme-accent);white-space:nowrap}
 .template-option small{display:block;margin-top:8px;font-weight:400;color:var(--muted);line-height:1.5}.wizard-content .notice{margin:15px 0}.fee-flow{flex-wrap:wrap}.terminal-title{padding:15px}.macro-charts .content-panel{min-width:0}
 @media(max-width:1300px){.header .nav{gap:17px}.header .global-search{max-width:200px}.header .wordmark{font-size:20px}}
 @media(max-width:900px){.macro-charts{grid-template-columns:repeat(2,minmax(0,1fr))}.money-flow{grid-template-columns:1fr}.money-flow .flow-arrow{transform:rotate(90deg);width:24px}.notification-row{gap:10px}.notification-row .text-button{white-space:nowrap}}
