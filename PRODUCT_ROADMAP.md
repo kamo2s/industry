@@ -208,3 +208,21 @@ Temporary memesplice.fun deployment now uses APP_ENV=staging, APP_MODE=live and 
 
 Separated public service earnings (including Coin-to-Coin receipts), net after costs and Pump funding. Preserved eligible revenue for Self-Sustaining and external-only macro totals. Coin profiles, charts, directory sorts/cards, homepage Coin summaries and owner/watch lists now use the correct display measure. 315 tests, production build/typecheck and changed-file lint pass. Three desktop/mobile browser passes reviewed; no layout redesign or economic-policy change. Evidence: qa/income-metrics/REVIEW.md. Hosted verification follows deployment.
 
+
+## Pump launch enablement — awaiting owner setup signature, October 6, 2026
+
+Owner requested launch enablement. Read-only Helius/program checks passed; production industry schema has 17 migrations, no Coins, no demo seed and no pending launches. Mandatory lookup table is absent; atomic launch without it exceeds Solana packet size. Unsigned lookup create/extend simulation passed at 0.00354068 SOL. Local Phantom handoff page is running at http://localhost:3011 with a 0.0036 SOL ceiling. No signing/broadcast performed. Hosted staging/test Coins remain unchanged; production cutover and owner-allowlisted launch flags follow finalized lookup verification. Collection remains separately disabled. Evidence and next configuration: qa/pump/mainnet-enable/PLAN.md.
+
+
+## Pump setup confirmed — October 6, 2026
+
+Owner completed lookup-table setup. Finalized on-chain contents/warmup verified and full unsigned mainnet launch simulation passed (949 bytes). Production cutover requested with existing industry ledger, no test-balance migration, owner-allowlisted wallet signing and collector disabled. Public launch access remains the target after controlled acceptance. No token created by Codex. Deployment/health verification follows. See qa/pump/mainnet-enable/PLAN.md.
+
+
+## Pump shared launch gate correction — October 7, 2026
+Owner encountered operator-paused error. Root cause: prior Pump-specific enablement left TOKEN_LAUNCH_ENABLED=false, which requireEnabled checks during prepare and confirm. Verified no database launch pause or emergency pause. Enabled shared gate on all three Railway services; explicitly kept legacy devnet launch disabled. Approved wallet passes both gate functions; unapproved wallet remains rejected. Collector unchanged/disabled. Deployment verification pending; no token transaction signed or broadcast.
+
+Deployment verified: industry-web, industry-database and industry-worker all SUCCESS; hosted health database=ok and worker=online. Shared launch gate correction is live. Actual wallet-signed launch remains user acceptance; no transaction signed by assistant.
+
+## Pump launch receipt, activation repair and optional initial buy — October 7, 2026
+Fixed pending-row status overriding verified routing evidence. SIGNAL independently verified and activated from its existing finalized transaction, no new chain action. Launch now retains a readable confirmation/success receipt with mint and links; no automatic redirect or saved-launch jargon. Optional capped wallet-funded SOL buy is part of the atomic create/routing transaction, with zero default and no business-credit subsidy. Readiness includes the shared pause. 321 tests, typecheck, changed-file lint, production build and reviewed desktop/mobile browser states pass. Scope, actual-versus-mocked evidence and protocol constraints: qa/pump/launch-ux/REVIEW.md. Collector remains disabled and owner allowlist unchanged.

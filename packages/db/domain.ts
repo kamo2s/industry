@@ -123,7 +123,7 @@ export class Domain {
     return this.dispatch(op,body,token);
   }
   async dispatch(op: string, body: any={}, token?: string): Promise<any> {
-    if(op==='pump/config')return publicPumpConfig();
+    if(op==='pump/config'){const config=publicPumpConfig();return {...config,enabled:config.enabled&&await enabled(this.db,'launches')};}
     if(op==='pump/metadata')return this.pump.metadata(body.id);
     if(['pump/prepare','pump/submit','pump/recover','pump/resume','pump/cancel','pump/status'].includes(op)){const profile=await this.session(this.db,token);ensure(profile,'UNAUTHORIZED','Authenticate first',401);if(op==='pump/cancel')return this.pump.cancel(profile,body.id);if(op==='pump/resume')return this.pump.resume(profile,body.id);if(op==='pump/prepare')return this.pump.prepare(profile,body.input,body.key);if(op==='pump/submit')return this.pump.submit(profile,body.id,body.transaction);if(op==='pump/recover')return this.pump.recover(profile,body.id);return this.pump.status(profile,body.id);}
     if(op==='agents/routing-check'){

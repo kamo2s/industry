@@ -43,6 +43,7 @@ export const agentSchema = z.object({
   jobType: z.enum(templates), tools: z.array(z.enum(toolKeys)).max(5),
   brain: z.string().max(150).optional(),
   tokenMode: z.enum(['sandbox', 'existing', 'devnet', 'pump']), mint: z.string().max(64).default(''),
+  initialBuySol: z.number().finite().min(0).max(100).refine(n=>Math.abs(Math.round(n*1e9)/1e9-n)<1e-12,'Use at most nine decimal places').optional(),
   icon: z.string().max(150).default(''), scope: z.string().max(2000).default(''),
   domains: z.array(z.string().regex(/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/i)).max(20).default([]),
   schedule: z.enum(['manual', 'event', 'interval', 'continuous']).default('interval'), intervalMinutes: z.number().int().min(5).max(10080).default(60),

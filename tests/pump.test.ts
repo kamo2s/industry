@@ -2,11 +2,11 @@ import { metrics } from '../packages/db/metrics';
 import { beforeAll,afterAll,it,expect,vi } from 'vitest';
 import { randomUUID,createHash } from 'node:crypto';
 import { Keypair,AddressLookupTableAccount,VersionedTransaction,ComputeBudgetProgram,SystemProgram } from '@solana/web3.js';
-import { NATIVE_MINT,TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { NATIVE_MINT,TOKEN_PROGRAM_ID,TOKEN_2022_PROGRAM_ID,MintLayout } from '@solana/spl-token';
 import { BN } from '@coral-xyz/anchor';
 import bs58 from 'bs58';
 import nacl from 'tweetnacl';
-import { PUMP_EVENT_AUTHORITY_PDA } from '@pump-fun/pump-sdk';
+import { PUMP_EVENT_AUTHORITY_PDA,PUMP_SDK } from '@pump-fun/pump-sdk';
 import { launchInstructions,buildLaunch,validateLaunchInstructions,verifySignedLaunch,verifySharing,feeSharingConfigPda,feeProgram,pumpProgram,ammProgram,collectionInstructions,PUMP_PROGRAM_ID,PUMP_FEE_PROGRAM_ID,bondingCurvePda,type RoutingState } from '../packages/pump/adapter';
 import { validatePrice,usdMicros,receiptPrice,SOL_USD_FEED,type PriceProof } from '../packages/pump/pricing';
 import { parseFeeReceipts,receiptUnit,type PumpReceipt } from '../packages/pump/receipts';
@@ -24,6 +24,15 @@ const terms={mint:mint.publicKey.toBase58(),creator:creator.publicKey.toBase58()
 const sharing=feeSharingConfigPda(mint.publicKey),config={bump:255,version:2,status:{active:{}},mint:mint.publicKey,admin:creator.publicKey,adminRevoked:true,shareholders:[{address:treasury.publicKey,shareBps:10000}]};
 const state:RoutingState={...terms,status:'VERIFIED',provider:'pump.fun',sharingConfig:sharing.toBase58(),version:2,shareBps:10000,adminRevoked:true,slot:100,quoteMint:NATIVE_MINT.toBase58(),quoteDecimals:9,quoteTokenProgram:TOKEN_PROGRAM_ID.toBase58(),graduated:false,checkedAt:new Date().toISOString()};
 const time=Math.floor(Date.now()/1000)-20,proof:PriceProof={feedId:SOL_USD_FEED,price:'15000000000',exponent:-8,confidence:'1000000',publishTime:time,source:'https://hermes.pyth.network',retrievedAt:time+15,responseHash:'a'.repeat(64)};
+it('keeps finalized routing proof independent of pending database status and private columns',async()=>{
+ const data=Buffer.alloc(MintLayout.span);MintLayout.encode({mintAuthorityOption:0,mintAuthority:mint.publicKey,supply:1000000000n,decimals:6,isInitialized:true,freezeAuthorityOption:0,freezeAuthority:mint.publicKey},data);
+ const info=(owner:any,data:Buffer)=>({owner,data,executable:false,lamports:10000000,rentEpoch:0});
+ const rpc:any={getMultipleAccountsInfoAndContext:async()=>({context:{slot:321},value:[info(TOKEN_2022_PROGRAM_ID,data),info(PUMP_FEE_PROGRAM_ID,await feeProgram.coder.accounts.encode('sharingConfig',config)),info(PUMP_PROGRAM_ID,Buffer.alloc(0))]}),getAccountInfo:async()=>null};
+ const decoder=vi.spyOn(PUMP_SDK,'decodeBondingCurve').mockReturnValue({creator:sharing,isMayhemMode:false,isCashbackCoin:false,isHolderReward:false,quoteMint:NATIVE_MINT} as any);
+ try{const row={...terms,status:'confirmed',provider:'untrusted',mint_secret:'must-not-leak',config:{private:true}};
+ const {evidence}=await adapter.routingState(rpc,row,300);expect(evidence.status).toBe('VERIFIED');expect(evidence.provider).toBe('pump.fun');expect(evidence.mint).toBe(terms.mint);expect(evidence.creator).toBe(terms.creator);expect(evidence.slot).toBe(321);expect(evidence).not.toHaveProperty('mint_secret');expect(evidence).not.toHaveProperty('config');
+ }finally{decoder.mockRestore();}
+});
 let table:AddressLookupTableAccount,db:Database,business:string,receipt:PumpReceipt,receiptId:string;
 beforeAll(async()=>{process.env.APP_MODE='demo';process.env.WALLET_ENCRYPTION_KEY='a'.repeat(64);
  const instructions=await launchInstructions(terms),addresses=[...new Map(instructions.flatMap(i=>i.keys).filter(k=>!k.isSigner).map(k=>[k.pubkey.toBase58(),k.pubkey])).values()];table=new AddressLookupTableAccount({key:Keypair.generate().publicKey,state:{deactivationSlot:18446744073709551615n,lastExtendedSlot:1,lastExtendedSlotStartIndex:0,authority:undefined,addresses}});
@@ -33,6 +42,13 @@ beforeAll(async()=>{process.env.APP_MODE='demo';process.env.WALLET_ENCRYPTION_KE
  receipt={businessId:business,network:'devnet',mint:terms.mint,sharingConfig:state.sharingConfig,signature:'fixture-signature',instructionIndex:1,eventIndex:0,slot:101,blockTime:time,quoteMint:state.quoteMint,quoteDecimals:9,rawAmount:'1000000000',normalizedAmount:'1.000000000',treasury:terms.treasury,operation:'distribute_creator_fees_v2',confirmation:'finalized',key:'pump-fixture:'+randomUUID(),evidence:{fixture:true}};
 });
 afterAll(async()=>{vi.unstubAllEnvs();vi.restoreAllMocks();await db.close();});
+it('reports a shared launch pause in the public Pump readiness response',async()=>{
+ const domain=new Domain(db);vi.stubEnv('PUMP_LAUNCH_ENABLED','true');vi.stubEnv('TOKEN_LAUNCH_ENABLED','false');
+ expect((await domain.dispatch('pump/config')).enabled).toBe(false);
+ vi.stubEnv('TOKEN_LAUNCH_ENABLED','true');expect((await domain.dispatch('pump/config')).enabled).toBe(true);
+ await db.query("INSERT INTO system_settings(key,value) VALUES('disable_launches','true') ON CONFLICT(key) DO UPDATE SET value='true'");expect((await domain.dispatch('pump/config')).enabled).toBe(false);
+ await db.query("DELETE FROM system_settings WHERE key='disable_launches'");vi.unstubAllEnvs();
+});
 it('builds official createV2 → sharing → final shares atomically within 1232 bytes with lookup addresses',async()=>{const tx=await buildLaunch(terms,blockhash,[table]);expect(tx.serialize().length).toBeLessThanOrEqual(1232);expect(tx.message.compiledInstructions).toHaveLength(4);const i=await launchInstructions(terms);expect(i.map(i=>i.programId.toBase58())).toEqual([ComputeBudgetProgram.programId.toBase58(),PUMP_PROGRAM_ID.toBase58(),PUMP_FEE_PROGRAM_ID.toBase58(),PUMP_FEE_PROGRAM_ID.toBase58()]);const create=(pumpProgram.coder.instruction as any).decode(i[1].data) as any,update=(feeProgram.coder.instruction as any).decode(i[3].data) as any;expect(create.name).toBe('createV2');expect(create.data.isMayhemMode).toBe(false);expect(create.data.isCashbackEnabled).toEqual({0:false});expect(update.name).toBe('updateFeeSharesV2');expect(update.data.shareholders).toEqual(config.shareholders);expect(i[1].keys.filter(k=>k.isSigner).map(k=>k.pubkey.toBase58())).toEqual(expect.arrayContaining([terms.mint,terms.creator]));await expect(buildLaunch(terms,blockhash)).rejects.toThrow();});
 it('rejects missing/reordered instructions and modified destination or mint',async()=>{const i=await launchInstructions(terms);await expect(validateLaunchInstructions(i.slice(0,3),terms)).rejects.toThrow('ordering');await expect(validateLaunchInstructions([i[0],i[2],i[1],i[3]],terms)).rejects.toThrow();await expect(validateLaunchInstructions(i,{...terms,treasury:Keypair.generate().publicKey.toBase58()})).rejects.toThrow();await expect(validateLaunchInstructions(i,{...terms,mint:Keypair.generate().publicKey.toBase58()})).rejects.toThrow();});
 it('requires both signatures and rejects any wallet alteration',async()=>{const prepared=await buildLaunch(terms,blockhash,[table]);prepared.sign([mint]);const wire=prepared.serialize();expect(()=>verifySignedLaunch(wire,wire)).toThrow('Both');prepared.sign([creator]);expect(verifySignedLaunch(prepared.serialize(),wire).signatures).toHaveLength(2);prepared.message.recentBlockhash=Keypair.generate().publicKey.toBase58();expect(()=>verifySignedLaunch(prepared.serialize(),wire)).toThrow('differs');});
@@ -51,6 +67,19 @@ it('queues manual collection only for an authenticated administrator and never a
 it('limits collector costs/balances and denies runtime treasury commands',async()=>{checkCollectionCost(10000000n,10000n,50000000n,0n);for(const [pending,cost,balance,daily] of [[1n,1n,100n,0n],[10000000n,100001n,50000000n,0n],[10000000n,10000n,100000001n,0n],[10000000n,10000n,100n,0n],[10000000n,10000n,50000000n,1000000n]])expect(()=>checkCollectionCost(pending,cost,balance,daily)).toThrow();const domain=new Domain(db);await expect(domain.worker('pump/collect',{})).rejects.toThrow();await expect(domain.dispatch('admin/pump-collect',{businessId:business})).rejects.toThrow();vi.stubEnv('PUMP_LAUNCH_ENABLED','false');expect(()=>requirePumpLaunch(terms.creator)).toThrow('disabled');vi.stubEnv('PUMP_FEE_COLLECTION_ENABLED','false');expect(()=>requirePumpCollection()).toThrow('disabled');});
 
 it('uses reusable static lookup addresses at maximum metadata size',async()=>{const addresses=await launchLookupAddresses(treasury.publicKey),t=new AddressLookupTableAccount({key:Keypair.generate().publicKey,state:{...table.state,addresses}});const tx=await buildLaunch({...terms,symbol:'T'.repeat(10)},blockhash,[t]);expect(tx.serialize().length).toBeLessThanOrEqual(1232);expect(addresses.some(k=>k.equals(mint.publicKey)||k.equals(creator.publicKey))).toBe(false);});
+it('atomically buys to the creator after locked routing, caps SOL and fits the existing static lookup',async()=>{
+ const addresses=await launchLookupAddresses(treasury.publicKey),lookup=new AddressLookupTableAccount({key:table.key,state:{...table.state,addresses}});
+ const initialBuy={lamports:'10000000',tokenAmount:'100000000',feeRecipient:Keypair.generate().publicKey.toBase58(),buybackFeeRecipient:Keypair.generate().publicKey.toBase58()};
+ const t={...terms,symbol:'B'.repeat(13),uri:'https://memesplice.fun/api/pump/metadata/AAAAAAAAAAAAAAAAAAAAAA',initialBuy};
+ const tx=await buildLaunch(t,blockhash,[lookup]);expect(tx.serialize().length).toBeLessThanOrEqual(1232);
+ const ixs=await launchInstructions(t);expect(ixs).toHaveLength(5);
+ const decoded=(pumpProgram.coder.instruction as any).decode(ixs[4].data);expect(decoded.name).toBe('buy');expect(decoded.data.maxSolCost.toString()).toBe(initialBuy.lamports);expect(decoded.data.amount.toString()).toBe(initialBuy.tokenAmount);
+ expect(ixs[4].keys.some(k=>k.pubkey.equals(adapter.creatorVaultPda(sharing)))).toBe(true);
+ await expect(validateLaunchInstructions(ixs,{...t,initialBuy:{...initialBuy,lamports:'10000001'}})).rejects.toThrow();
+ await expect(validateLaunchInstructions([ixs[0],ixs[3],ixs[4],ixs[1],ixs[2]],t)).rejects.toThrow();
+ await expect(launchInstructions({...t,initialBuy:{...initialBuy,lamports:'-1'}})).rejects.toThrow();
+ tx.sign([mint,creator]);expect(verifySignedLaunch(tx.serialize(),tx.serialize()).signatures).toHaveLength(2);
+});
 it('recovers unknown launch confirmation exactly once and retries the same mint after expiry',async()=>{
  vi.stubEnv('PUMP_LAUNCH_ENABLED','true');vi.stubEnv('PUMP_NETWORK','devnet');vi.stubEnv('INDUSTRY_FEE_TREASURY',terms.treasury);vi.stubEnv('PUMP_METADATA_BASE_URL','https://industry.example');vi.stubEnv('PUMP_LOOKUP_TABLES',table.key.toBase58());
  const addresses=await launchLookupAddresses(treasury.publicKey),lookup=new AddressLookupTableAccount({key:table.key,state:{...table.state,addresses}});

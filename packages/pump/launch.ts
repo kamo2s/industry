@@ -7,11 +7,12 @@ import { one,type Database,type Row,type Queryable } from '../db/connection';
 import { requireEnabled } from '../db/controls';
 import { buildLaunch,routingState,verifySignedLaunch,txSignature,type RoutingState } from './adapter';
 import { assertPumpNetwork,pumpConfig,pumpConnection,requirePumpLaunch } from './config';
+import {quoteInitialBuy,metadataReference,metadataLaunchId} from './initial-buy';
 type Activate=(tx:Queryable,profile:Row,input:AgentInput,pump:{id:string;evidence:RoutingState;signature:string;metadataUri:string;launchId:string;launchSlot:number})=>Promise<any>;
 const keySchema=z.string().uuid();
 export class PumpLaunchService {
  constructor(private db:Database,private activate:Activate,private connection:()=>Connection=pumpConnection){}
- private view(r:Row){return {id:r.id,status:r.status,mint:r.mint,network:r.network,treasury:r.treasury,creator:r.creator,shareBps:10000,transaction:r.status==='prepared'?r.prepared_transaction:undefined,lastValidBlockHeight:r.last_valid_height,signature:r.signature,evidence:r.evidence,error:r.error,result:r.active_result};}
+ private view(r:Row){return {id:r.id,status:r.status,mint:r.mint,network:r.network,treasury:r.treasury,creator:r.creator,shareBps:10000,name:r.config.name,input:r.config,initialBuySol:r.config.initialBuySol||0,initialBuyTokens:r.terms?.initialBuy?.tokenAmount,transaction:r.status==='prepared'?r.prepared_transaction:undefined,lastValidBlockHeight:r.last_valid_height,signature:r.signature,evidence:r.evidence,error:r.error,result:r.active_result};}
  private async owned(id:string,profile:Row){const r=await one(this.db,'SELECT * FROM pump_launches WHERE id=$1 AND profile_id=$2',[keySchema.parse(id),profile.id]);ensure(r,'NOT_FOUND','Pump launch not found',404);return r;}
  async resume(profile:Row,id:string){const r=await this.owned(id,profile);return this.prepare(profile,r.config,`resume-${id}`,id);}
  private async mintExists(rpc:Connection,mint:string){return rpc.getAccountInfo(new PublicKey(mint),{commitment:'finalized',minContextSlot:await rpc.getSlot('finalized')});}
@@ -29,7 +30,7 @@ export class PumpLaunchService {
    const id=randomUUID(),businessId=randomUUID(),mint=Keypair.generate();
    const site=process.env.PUMP_METADATA_BASE_URL||process.env.NEXT_PUBLIC_SITE_URL||'';
    ensure(site.startsWith('https://')&&!/localhost|127\.0\.0\.1/.test(site),'PUMP_METADATA','Configure a public HTTPS metadata origin before Pump launch',503);
-   const uri=`${site.replace(/\/$/,'')}/api/pump/metadata/${id}`;ensure(Buffer.byteLength(uri)<=200,'PUMP_METADATA','Metadata URI exceeds Pump limit');
+   const uri=`${site.replace(/\/$/,'')}/api/pump/metadata/${metadataReference(id)}`;ensure(Buffer.byteLength(uri)<=200,'PUMP_METADATA','Metadata URI exceeds Pump limit');
    const secret=encryptSecret(mint.secretKey);const address=mint.publicKey.toBase58();mint.secretKey.fill(0);
    return (await one(tx,'INSERT INTO pump_launches(id,business_id,profile_id,idempotency_key,fingerprint,config,network,mint,creator,treasury,metadata_uri,mint_secret) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *',[id,businessId,profile.id,scoped,fingerprint,JSON.stringify(config),c.network,address,profile.primary_wallet,c.treasury,uri,secret]))!;
   });
@@ -49,10 +50,11 @@ export class PumpLaunchService {
    const unexpired=await one(tx,'SELECT id FROM pump_launch_attempts WHERE launch_id=$1 AND last_valid_height>=$2',[r.id,height]);ensure(!unexpired,'PUMP_CONFIRMATION_UNKNOWN','Wait for the existing transaction to confirm or expire',409);
    ensure(r.mint_secret,'PUMP_SIGNER_EXPIRED','Ephemeral mint signer has expired; reconcile the existing mint before an operator cancels this operation',409);
    const tables=[];for(const address of (process.env.PUMP_LOOKUP_TABLES||'').split(',').filter(Boolean)){const result=await rpc.getAddressLookupTable(new PublicKey(address.trim()),{commitment:'finalized'});ensure(result.value?.isActive(),'PUMP_LOOKUP_TABLE','Configured lookup table is inactive or missing');tables.push(result.value!);}
-   const terms={mint:r.mint,creator:r.creator,treasury:r.treasury,name:r.config.name,symbol:r.config.ticker,uri:r.metadata_uri};
+   const terms={mint:r.mint,creator:r.creator,treasury:r.treasury,name:r.config.name,symbol:r.config.ticker,uri:r.metadata_uri,initialBuy:await quoteInitialBuy(rpc,r.config.initialBuySol||0)};
    const latest=await rpc.getLatestBlockhash('finalized'),transaction=await buildLaunch(terms,latest.blockhash,tables);
    const bytes=decryptSecret(r.mint_secret),mint=Keypair.fromSecretKey(Uint8Array.from(bytes));bytes.fill(0);transaction.sign([mint]);mint.secretKey.fill(0);
    const simulated=await rpc.simulateTransaction(transaction,{sigVerify:false,commitment:'finalized'});
+   ensure(!simulated.value.err||!(simulated.value.logs?.some(line=>/insufficient (lamports|funds)/i.test(line))||JSON.stringify(simulated.value.err).includes('InsufficientFunds')),'PUMP_INSUFFICIENT_SOL','Your wallet needs more SOL for token creation, account rent, network fees and your optional initial buy.',409);
    ensure(!simulated.value.err,'PUMP_SIMULATION_FAILED',`Pump launch simulation failed: ${JSON.stringify(simulated.value.err).slice(0,180)}`,409);
    const serialized=Buffer.from(transaction.serialize()).toString('base64'),messageHash=hash(Buffer.from(transaction.message.serialize()).toString('base64'));
    await tx.query('INSERT INTO pump_launch_attempts(launch_id,message_hash,prepared_transaction,last_valid_height) VALUES($1,$2,$3,$4)',[r.id,messageHash,serialized,latest.lastValidBlockHeight]);
@@ -91,5 +93,5 @@ export class PumpLaunchService {
   return this.view(await this.owned(id,profile));
  }
  async status(profile:Row,id?:string){if(id)return this.view(await this.owned(id,profile));return (await this.db.query("SELECT * FROM pump_launches WHERE profile_id=$1 ORDER BY created_at DESC LIMIT 10",[profile.id])).rows.map(r=>this.view(r));}
- async metadata(id:string){const r=await one(this.db,'SELECT config,metadata_uri FROM pump_launches WHERE id=$1',[keySchema.parse(id)]);ensure(r,'NOT_FOUND','Metadata not found',404);return {name:r.config.name,symbol:r.config.ticker,description:r.config.description,...(r.config.icon?{image:`${new URL(r.metadata_uri).origin}/api/uploads/${r.config.icon}`}:{}) ,external_url:process.env.NEXT_PUBLIC_SITE_URL,attributes:[{trait_type:'Profession',value:r.config.jobType}]};}
+ async metadata(id:string){const r=await one(this.db,'SELECT config,metadata_uri FROM pump_launches WHERE id=$1',[keySchema.parse(metadataLaunchId(id))]);ensure(r,'NOT_FOUND','Metadata not found',404);return {name:r.config.name,symbol:r.config.ticker,description:r.config.description,...(r.config.icon?{image:`${new URL(r.metadata_uri).origin}/api/uploads/${r.config.icon}`}:{}) ,external_url:process.env.NEXT_PUBLIC_SITE_URL,attributes:[{trait_type:'Profession',value:r.config.jobType}]};}
 }
