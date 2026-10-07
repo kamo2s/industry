@@ -5,13 +5,13 @@ body:before,.product-theme:before{background:none}
 .nav>a.active:after{background:var(--theme-accent);box-shadow:0 0 10px rgba(var(--theme-accent-rgb),.3)}
 .home-v2 .panel{background:linear-gradient(135deg,var(--theme-surface),var(--theme-page));border-color:var(--theme-border)}
 .home-v2 .network-overlay{background:rgba(var(--theme-surface-rgb),.95);border-color:var(--theme-border)}
-.home-v2 .terminal-metrics>div,.home-v2 .home-macro>div{background:radial-gradient(ellipse at 100% 100%,rgba(var(--tint),.1),transparent 65%),var(--theme-page);border-color:rgba(var(--tint),.3)}
+.home-v2 .terminal-metrics>div,.home-v2 .home-macro>div{background:radial-gradient(ellipse 110px 55px at 25px 22px,rgba(var(--tint),.085),transparent 100%),var(--theme-page);border-color:rgba(var(--tint),.42);box-shadow:inset 0 1px 12px rgba(var(--tint),.025)}
 .home-v2 .home-service .terminal-service{background:radial-gradient(ellipse at 20% 0,rgba(var(--tint),.05),transparent 65%),var(--theme-page);border-color:rgba(var(--tint),.3)}
 .mp-service-card{background:radial-gradient(ellipse at 8% 0%,color-mix(in srgb,var(--tint) 5%,transparent),transparent 70%),var(--theme-surface);border-color:color-mix(in srgb,var(--tone) 23%,var(--theme-border))}
 .mp-service-card:hover{border-color:color-mix(in srgb,var(--tone) 52%,var(--theme-border))}
-.home-status[data-status="Self-Sustaining"],.mp-status[data-status="Self-Sustaining"],.cd-status.sustaining,.cp-status.sustaining{color:var(--theme-amber);background:rgba(var(--theme-amber-rgb),.07);border-color:rgba(var(--theme-amber-rgb),.32)}
+.home-status[data-status="Self-Sustaining"],.mp-status[data-status="Self-Sustaining"],.cd-status.sustaining,.cp-status.sustaining{color:var(--theme-purple);background:rgba(var(--theme-purple-rgb),.065);border-color:rgba(var(--theme-purple-rgb),.42)}
 .cd-summary-item.summary-2{--tone:var(--theme-amber);--tint:var(--theme-amber)}
-.cd-filter-dot.self-sustaining{background:var(--theme-amber)}
+.cd-filter-dot.self-sustaining{background:var(--theme-purple)}
 .cd-heading:before{background:none}
 .cp-panel,.coin-profile .live-screen{background:linear-gradient(140deg,var(--theme-surface),var(--theme-page))}
 .coin-profile .browser-awaiting{background:radial-gradient(ellipse,rgba(var(--theme-accent-rgb),.035),transparent 68%)}
@@ -26,3 +26,19 @@ body:before,.product-theme:before{background:none}
 :root body :is(a,button,input,select,textarea,summary):focus-visible{outline-color:var(--theme-accent)!important}
 :root body :is(input:not([type=checkbox]):not([type=radio]),textarea,select):focus{border-color:var(--theme-accent)!important;box-shadow:inset 0 0 0 1px rgba(var(--theme-accent-rgb),.25)!important}
 ::selection{background:rgba(var(--theme-accent-rgb),.22);color:var(--theme-text)}
+
+/* Illuminated data: retain neutral surfaces and existing geometry. */
+.home-v2 .tint-green{--accent:var(--theme-success);--tint:var(--theme-success-rgb)}
+.home-v2 .terminal-metrics strong,.home-v2 .home-macro strong:not(.negative){color:var(--accent);text-shadow:0 0 14px rgba(var(--tint),.2)}
+.home-v2 .home-category-bars b{box-shadow:0 0 6px rgba(var(--tint),.2)}
+.cd-card,.mp-service-card{border-color:var(--theme-border)}
+.home-status,.cd-status,.mp-status,.cp-status{box-shadow:none}
+.home-status[data-status=Active],.home-status[data-status=Working],.cd-status.active,.cp-status.active,.mp-status[data-status=Active],.badge.running,.badge.completed{color:var(--theme-success);background:rgba(var(--theme-success-rgb),.055);border-color:rgba(var(--theme-success-rgb),.38)}
+.home-status[data-status=Dormant],.home-status[data-status="Needs funding"],.cd-status.dormant{color:var(--theme-amber);background:rgba(var(--theme-amber-rgb),.055);border-color:rgba(var(--theme-amber-rgb),.38)}
+:is(.home-status,.cd-status,.mp-status,.cp-status)[data-status*="waiting" i],.badge.queued,.badge.pending{color:var(--theme-blue);background:rgba(var(--theme-blue-rgb),.055);border-color:rgba(var(--theme-blue-rgb),.38)}
+.home-status[data-status="Needs attention"],.cd-status.error,.badge.failed,.cp-status[data-status*="attention" i],:is(.home-status,.mp-status,.cp-status)[data-status*="error" i],:is(.home-status,.mp-status,.cp-status)[data-status*="failed" i]{color:var(--theme-error);background:rgba(var(--theme-error-rgb),.055);border-color:rgba(var(--theme-error-rgb),.38)}
+@media(hover:hover){
+ .cd-card:hover,.mp-service-card:hover,.home-v2 .home-service .terminal-service:hover{border-color:rgba(var(--theme-accent-rgb),.5);box-shadow:0 0 13px rgba(var(--theme-accent-rgb),.07);background:var(--theme-raised)}
+ .button:not(.primary):not(:disabled):hover,.home-v2 .hire-button:hover,.mp-card-actions>a:hover{background:var(--theme-hover);border-color:rgba(var(--theme-accent-rgb),.58);box-shadow:0 0 10px rgba(var(--theme-accent-rgb),.08)}
+ .home-coin-table tbody tr:hover{background:var(--theme-raised)}
+}

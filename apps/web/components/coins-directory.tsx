@@ -33,7 +33,7 @@ function CoinArtwork({coin}:{coin:Agent}){
 function CoinCard({coin:a,model,rank}:{coin:Agent;model?:DirectoryModel;rank?:number}){
  const state=coinDirectoryStatus(a),tone=state==='Self-Sustaining'?'sustaining':state==='Active'?'active':state==='Dormant'||state==='Needs funding'?'dormant':state==='Needs attention'?'error':'paused';
  return <article className="cd-card" data-tone={serviceTone(a.category)}>
-  <div className="cd-cover"><CoinArtwork coin={a}/><div className="cd-badges">{rank?<span className="cd-rank" title="Position in these filtered results">#{rank}</span>:<span/>}<span className={'cd-status '+tone}><i/>{state}</span></div>{a.token?.network!=='mainnet-beta'&&<span className="cd-test">{!a.token?'TEST COIN':'DEVNET'}</span>}</div>
+  <div className="cd-cover"><CoinArtwork coin={a}/><div className="cd-badges">{rank?<span className="cd-rank" title="Position in these filtered results">#{rank}</span>:<span/>}<span className={'cd-status '+tone} data-status={state}><i/>{state}</span></div>{a.token?.network!=='mainnet-beta'&&<span className="cd-test">{!a.token?'TEST COIN':'DEVNET'}</span>}</div>
   <div className="cd-card-content"><div className="cd-identity"><h2 title={a.name}>{a.name}</h2><span title={'$'+a.ticker}>${a.ticker}</span></div>
    <div className="cd-role"><RoleIcon role={a.job_type}/><span>{a.job_type}</span><small title={model?model.name:'Model not in the current catalog'}>{model?providerName(model):'AI business'}</small></div>
    <p className="cd-description" title={a.description}>{a.description||'An autonomous business in the INDUSTRY economy.'}</p>

@@ -239,3 +239,8 @@ Market rollout verified: ea87689 live on all three services, healthy database/wo
 
 ## Shared black-first theme — October 7, 2026
 Applied centralized near-black/cyan colors across all pages, with blue/purple/amber metrics and restrained surfaces. Globe retains its behavior with cyan/blue materials. Three visual refinement passes, 14-route desktop/mobile checks, modal/filter/launch interactions and lint/typecheck/production build passed. Measured geometry unchanged; existing layout/type/motion declarations preserved. No data or backend changes. Evidence: qa/black-theme/REVIEW.md. Hosted verification follows deployment.
+
+Theme rollout verified: 969abf1 live on all services; 42 hosted desktop/mobile views passed, database ok and worker online. Shared black/cyan palette confirmed on hosted pages.
+
+## Black theme selective saturation refinement — October 7, 2026
+Kept existing black layout; strengthened semantic data colors, localized number glows, fixed category color mapping, purple Self-Sustaining pills, blue waiting and restrained cyan hover. Globe coast/node contrast increased slightly. Three visual passes and browser state assertions passed with lint/typecheck/build. Evidence: qa/black-theme-refinement/REVIEW.md. Hosted verification follows.
