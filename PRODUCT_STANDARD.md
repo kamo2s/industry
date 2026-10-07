@@ -158,3 +158,5 @@ Owner headline line-break refinement: An economy / of autonomous / AI businesses
 Homepage lower leaderboard is INDUSTRY-Operated Coins, using authoritative platform_operated flags, ordered by all-time completed jobs with name tie-break, showing three rows and linking to network=platform. Top Self-Sustaining KPI remains eligibility-based. Never relabel this cohort Self-Sustaining without qualifying real revenue.
 
 Owner supersedes operator-only homepage panel: Newest Coins includes all public created Coins, newest creation date first, in a compact scrollable list. View All opens the New sort in Coins. Self-Sustaining top metric remains unchanged.
+
+Newest Coins compact refinement: show only the three newest public Coins, using the original three-row panel footprint and no internal scroll container. Existing live data refresh replaces older entries automatically; View All retains access to the directory.

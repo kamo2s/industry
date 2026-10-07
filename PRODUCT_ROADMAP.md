@@ -285,3 +285,5 @@ Added hero sentence period; removed No wallet needed yet from Launch image help.
 
 ## Newest Coins panel — October 7, 2026
 Owner replaced the operator-only panel with all newly created public Coins ordered by created_at descending. All seven current Coins present; compact list scrolls, View All uses sort=New. Reviewed panel screenshots at 1920/1440/390; lint and build/TypeScript pass.
+
+Newest Coins compact correction: removed scrolling and capped the list at three, restoring its original three-row dimensions rather than stretching adjacent economy/category panels. Reviewed 1920/1440/390 captures and count/no-scroll checks; build/TypeScript and targeted lint pass.
