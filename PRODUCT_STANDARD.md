@@ -142,3 +142,6 @@ Theme refinement: keep #020405 page and near-black cards. Use saturated semantic
 
 ## Personal homepage economy — October 7, 2026
 The lower homepage panel is Your Coin Economy, scoped server-side to the authenticated creator profile. Include all created Coins, not holdings or watchlist entries. Show service earnings, settled C2C volume (count each order once), completed jobs and net after recorded costs/refunds; exclude funding and other accounting units. Signed-out/no-Coins states are explicit, failures are unavailable rather than zero, and account changes discard prior values. Top KPIs and Live Network remain project-wide. All-time totals and 7D/30D charts are distinct. No-store API responses; never accept a client-selected ownership scope.
+
+## Featured service visibility — October 7, 2026
+Homepage Featured Services uses the Marketplace featured ranking and shared availability/status resolver. Published listings remain discoverable for dormant providers; show Unavailable rather than hiding them or implying they can execute. Loading/errors must not display the genuine empty-directory message.

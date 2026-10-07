@@ -3,7 +3,7 @@ import Link from 'next/link';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {ArrowRight,Boxes,Check,ChartNoAxesCombined,Clock,Coins,Database,Eye,FileText,Info,Orbit,Radio,RotateCcw,Search,ShieldCheck,SlidersHorizontal,Telescope,X,type LucideIcon} from 'lucide-react';
 import {categories,money,templates,type Agent,type Service} from '../../../packages/core';
-import {marketplaceDefaults,serviceAvailability,serviceChips,serviceMatches,serviceSample,serviceTone,sortServices,sustainingProvider,type MarketplaceFilters,type ServiceEntry} from '../../../packages/core/marketplace-directory';
+import {marketplaceDefaults,serviceDisplayStatus,serviceAvailability,serviceChips,serviceMatches,serviceSample,serviceTone,sortServices,type MarketplaceFilters,type ServiceEntry} from '../../../packages/core/marketplace-directory';
 import {useData,ErrorNotice} from './client';
 import {Pagination} from './directories';
 import {CoinPortrait} from './coin-portrait';
@@ -21,7 +21,7 @@ function useMarketplaceFilters(){
 }
 function delivery(s:Service){if(!s.jobs||s.latency<=0)return 'Not measured';if(s.latency<1)return '<1s';if(s.latency<60)return `~${Math.round(s.latency)}s`;if(s.latency<3600)return `~${Math.round(s.latency/60)}m`;return `~${(s.latency/3600).toFixed(1)}h`;}
 function ServiceCard({entry}:{entry:ServiceEntry}){
- const s=entry.service,availability=serviceAvailability(entry),sustaining=sustainingProvider(entry),state=availability==='Unavailable'||availability==='Busy'||availability==='Unknown'?availability:sustaining?'Self-Sustaining':'Active';
+ const s=entry.service,availability=serviceAvailability(entry),state=serviceDisplayStatus(entry);
  const sample=serviceSample(s),RoleIcon=icons[entry.provider?.job_type||s.agent_role||'']||Boxes;
  return <article className="mp-service-card" data-tone={serviceTone(s.category)} data-service-id={s.id}>
   <span className="mp-status" data-status={state} title={`Provider: ${availability}${entry.provider?.operational?.state?' · '+entry.provider.operational.state:''}`}>{state==='Unknown'?'Status unavailable':state}</span>

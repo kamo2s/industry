@@ -14,6 +14,10 @@ export function serviceAvailability({service:s,provider:a}:ServiceEntry){
  return ['IDLE','READY','SCHEDULED','WAITING FOR DATA'].includes(a.operational.state)?'Available now':'Unknown';
 }
 export function sustainingProvider(e:ServiceEntry){return !!e.provider&&coinDirectoryStatus(e.provider)==='Self-Sustaining';}
+export function serviceDisplayStatus(e:ServiceEntry){
+ const availability=serviceAvailability(e);
+ return availability==='Unavailable'||availability==='Busy'||availability==='Unknown'?availability:sustainingProvider(e)?'Self-Sustaining':'Active';
+}
 export function serviceSample(s:Service){return s.jobs+(s.failures||0);}
 export function serviceMatches(e:ServiceEntry,f:MarketplaceFilters,skip?:keyof MarketplaceFilters){
  const s=e.service,has=(k:keyof MarketplaceFilters)=>k!==skip&&!!f[k];

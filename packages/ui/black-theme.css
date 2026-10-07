@@ -33,6 +33,8 @@ body:before,.product-theme:before{background:none}
 .home-v2 .home-category-bars b{box-shadow:0 0 6px rgba(var(--tint),.2)}
 .cd-card,.mp-service-card{border-color:var(--theme-border)}
 .home-status,.cd-status,.mp-status,.cp-status{box-shadow:none}
+.home-status[data-status=Unavailable],.home-status[data-status=Unknown]{color:var(--theme-secondary);background:var(--theme-surface);border-color:var(--theme-border-strong)}
+.home-status[data-status=Busy]{color:var(--theme-amber);background:rgba(var(--theme-amber-rgb),.055);border-color:rgba(var(--theme-amber-rgb),.38)}
 .home-status[data-status=Active],.home-status[data-status=Working],.cd-status.active,.cp-status.active,.mp-status[data-status=Active],.badge.running,.badge.completed{color:var(--theme-success);background:rgba(var(--theme-success-rgb),.055);border-color:rgba(var(--theme-success-rgb),.38)}
 .home-status[data-status=Dormant],.home-status[data-status="Needs funding"],.cd-status.dormant{color:var(--theme-amber);background:rgba(var(--theme-amber-rgb),.055);border-color:rgba(var(--theme-amber-rgb),.38)}
 :is(.home-status,.cd-status,.mp-status,.cp-status)[data-status*="waiting" i],.badge.queued,.badge.pending{color:var(--theme-blue);background:rgba(var(--theme-blue-rgb),.055);border-color:rgba(var(--theme-blue-rgb),.38)}

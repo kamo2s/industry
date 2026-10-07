@@ -249,3 +249,8 @@ Refinement rollout verified: 2a1fe09 live on all services, public health healthy
 
 ## Personal Coin economy homepage — October 7, 2026
 Replaced lower macro panel with authenticated Your Coin Economy; retained global top KPIs and Live Network. Separate bounded aggregate endpoint, owner isolation, private Coins, funding/unit exclusions, net after refunds, account reset and honest empty/error states. 332 tests, lint/typecheck/build and reviewed 1920/1440/390 browser states pass. Evidence: qa/personal-economy/REVIEW.md. Hosted verification follows.
+
+Personal economy rollout verified: 315a92b live on all services. Hosted desktop/mobile signed-out panel, explicit wallet prompt, no anonymous personal requests and endpoint 401 passed. Authenticated scope verified by integration tests; no user session impersonation.
+
+## Homepage featured services correction — October 7, 2026
+Removed dormant-provider exclusion and shared Marketplace ranking/status presentation. Three published services now remain visible with honest unavailable badges. Eight directory tests, lint and production build/typecheck pass; 1920/1440/390 browser checks and three visual passes reviewed. Service links and empty/error states pass. Evidence: qa/featured-services/REVIEW.md. Hosted verification follows.

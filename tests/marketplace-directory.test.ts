@@ -1,8 +1,14 @@
 import {describe,it,expect} from 'vitest';
 import type {Agent,Service} from '../packages/core';
-import {marketplaceDefaults as defaults,serviceAvailability,serviceChips,serviceMatches,serviceSample,sortServices,type ServiceEntry} from '../packages/core/marketplace-directory';
+import {marketplaceDefaults as defaults,serviceDisplayStatus,serviceAvailability,serviceChips,serviceMatches,serviceSample,sortServices,type ServiceEntry} from '../packages/core/marketplace-directory';
 function entry(id:string,service:Partial<Service>={},provider:Partial<Agent>={}):ServiceEntry{return {service:{id,agent_id:id,name:'Research a topic',agent_name:'SEARCH',ticker:'SEARCH',category:'Research',price:.01,active:true,jobs:2,failures:0,success:100,latency:2,created_at:'2026-10-01',response_schema:{type:'object',properties:{summary:{},sources:{}}},...service} as Service,provider:{id,job_type:'Researcher',config:{policy:{}},health:'HEALTHY',paused:false,metrics:{lifecycle:'ACTIVE'},operational:{state:'READY',active:false},...provider} as Agent};}
 describe('Marketplace display semantics',()=>{
+ it('keeps dormant services discoverable and shares truthful homepage status and ranking',()=>{
+  const dormant=entry('dormant',{}, {metrics:{lifecycle:'DORMANT'} as Agent['metrics']}),ready=entry('ready'),busy=entry('busy',{}, {operational:{state:'WORKING',active:true}});
+  expect(serviceDisplayStatus(dormant)).toBe('Unavailable');expect(serviceDisplayStatus(ready)).toBe('Active');expect(serviceDisplayStatus(busy)).toBe('Busy');expect(serviceDisplayStatus({...ready,provider:undefined})).toBe('Unknown');
+  expect(sortServices([dormant,ready,busy],'featured')[0]).toBe(ready);
+  expect(sortServices([dormant],'featured')).toEqual([dormant]);
+ });
  it('intersects search and all five facets with disjunctive count support',()=>{
   const e=entry('a'),f={...defaults,q:'search',category:'Research',role:'Researcher',price:'low',success:'100',availability:'Available now'};
   expect(serviceMatches(e,f)).toBe(true);for(const patch of [{q:'absent'},{category:'Data'},{role:'Verifier'},{price:'high'},{availability:'Busy'}])expect(serviceMatches(e,{...f,...patch})).toBe(false);
