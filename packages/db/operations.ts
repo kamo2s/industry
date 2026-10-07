@@ -1,3 +1,4 @@
+import {testEconomy} from '../core/environment';
 import {ensure,usd} from '../core';
 import {operationEventInput,operationDescription,operationLabel,safeOperationalText,safeSourceUrl,type OperationalStatus} from '../core/operations';
 import {one,type Queryable,type Row} from './connection';
@@ -117,7 +118,7 @@ export async function liveOperations(tx:Queryable,body:any,profile?:Row){
  if(a.next_run_at&&Date.parse(a.next_run_at)<Date.now()&&!a.paused)radar.unshift({id:'schedule-due',at:a.next_run_at,jobId:null,label:'Scheduled mission is due; waiting for an eligible worker lane.'});
  const findings=own||a.config.publicOutput?outputs.reduce((n,j)=>n+(j.output?.findings?.length||0),0):null;
  const lastCompleted=jobs.find(j=>j.status==='succeeded')||await one(tx,"SELECT * FROM jobs WHERE agent_id=$1 AND status='succeeded' ORDER BY finished_at DESC LIMIT 1",[a.id]);
- return {businessId:a.id,name:a.name,slug:a.slug,own,development:a.config.tokenMode==='sandbox',observedAt:new Date().toISOString(),status,operation,lastBrowserSession:body.job?null:await lastBrowserSession(tx,a,profile),active:jobs.filter(j=>['running','queued'].includes(j.status)).map(lane),lastCompleted:lastCompleted?lane(lastCompleted):null,
+ return {businessId:a.id,name:a.name,slug:a.slug,own,development:testEconomy(),observedAt:new Date().toISOString(),status,operation,lastBrowserSession:body.job?null:await lastBrowserSession(tx,a,profile),active:jobs.filter(j=>['running','queued'].includes(j.status)).map(lane),lastCompleted:lastCompleted?lane(lastCompleted):null,
   recent:jobs.slice(0,12).map(lane),mission:{text:safeOperationalText(a.mission,2000),template:a.job_type,brain:a.config.brain||'development/mock',schedule:a.config.schedule,intervalMinutes:a.config.intervalMinutes,nextRun:a.next_run_at,runsToday:Number(today.autonomous),findingsToday:findings,publishedToday:a.config.publicOutput?outputs.length:0},
   metrics:{jobsToday:Number(today.completed),customerJobs:Number(today.paid),averageDeliverySeconds:today.delivery===null?null:Number(today.delivery),successRate:Number(today.completed)+Number(today.failed)?Number(today.completed)/(Number(today.completed)+Number(today.failed))*100:null,revenueToday:usd(Number(financial.revenue)),costToday:usd(Number(financial.costs)),sourcesToday:own||a.config.publicOutput?outputs.reduce((n,j)=>n+(j.output?.sources?.length||0),0):null},
   funds,radar,services:Number((await one(tx,'SELECT count(*) n FROM agent_services WHERE agent_id=$1 AND active',[a.id]))!.n)};

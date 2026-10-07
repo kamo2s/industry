@@ -1,3 +1,4 @@
+import {platformProvisionAuthority,platformOperatorIdentity} from './platform-authority';
 import {requireStagingLauncher,stagingCredits} from './staging-launch';
 import {tickerSchema} from '../core';
 import {supplierAvailable} from './supplier-availability';
@@ -38,7 +39,7 @@ import { refundDevnetPayment } from './refunds';
 import { businessRead,observeBusiness } from './business';
 import { modelCatalog,validateBrain } from '../agent/catalog';
 import { listWork,createWork,acceptWork,cancelWork,expireWork } from './work-market';
-import { customerAccount,fundBusiness,balances,businessAccount } from './journal';
+import { internalUnit,customerAccount,fundBusiness,balances,businessAccount } from './journal';
 const jid=z.string().uuid();
 const slugify=(v:string)=>v.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 export class Domain {
@@ -58,13 +59,14 @@ export class Domain {
     await tx.query('INSERT INTO idempotency_records(key,profile_id,operation,fingerprint,result) VALUES($1,$2,$3,$4,$5)',[scoped,profile.id,operation,fingerprint,JSON.stringify(result)]);
     return result;
   }
-  async create(tx: Queryable, profile: Row, c: AgentInput,pump?:{id:string;evidence:RoutingState;signature:string;metadataUri:string;launchId:string;launchSlot:number}) {
-    requireStagingLauncher(profile.primary_wallet,c.tokenMode);
+  async create(tx: Queryable, profile: Row, c: AgentInput,pump?:{id:string;evidence:RoutingState;signature:string;metadataUri:string;launchId:string;launchSlot:number},platformOperated?:typeof platformProvisionAuthority) {
+    if(platformOperated){ensure(platformOperated===platformProvisionAuthority&&profile.primary_wallet===platformOperatorIdentity,'PLATFORM_AUTHORITY','Internal platform authority required',403);ensure(c.tokenMode==='sandbox'&&!c.mint&&!c.initialBudget&&!c.initialOperatingBudget,'PLATFORM_CONFIG','Platform businesses cannot mint tokens or request automatic funding');}
+    else requireStagingLauncher(profile.primary_wallet,c.tokenMode);
     await requireEnabled(tx,'agents');
     if(c.autonomyVersion===1)c={...c,schedule:'continuous'};
     await validateBrain(c.brain);
     if(appEnvironment()==='staging'&&c.schedule==='interval')ensure(c.intervalMinutes>=15,'STAGING_INTERVAL','Staging schedules require at least 15 minutes');
-    ensure(c.tokenMode!=='sandbox'||testEconomy(),'TOKEN_REQUIRED','Live agents require a verified token');
+    ensure(c.tokenMode!=='sandbox'||testEconomy()||platformOperated,'TOKEN_REQUIRED','Live agents require a verified token');
     let tokenId=null;
     ensure(c.tokenMode!=='pump'||pump,'PUMP_PROOF_REQUIRED','Pump businesses activate only after independent finalized routing verification');
     if(pump){ensure(c.tokenMode==='pump'&&pump.evidence.status==='VERIFIED'&&pump.evidence.creator===profile.primary_wallet&&pump.evidence.mint===c.mint,'PUMP_PROOF_REQUIRED','Launch identity mismatch');tokenId=(await one(tx,`INSERT INTO solana_tokens(mint,network,name,symbol,decimals,metadata_uri,raw_metadata,official,creator_wallet,transaction_signature,launched_at) VALUES($1,$2,$3,$4,6,$5,$6,true,$7,$8,now()) RETURNING id`,[c.mint,pumpConfig().network,c.name,c.ticker,pump.metadataUri,JSON.stringify(pump.evidence),profile.primary_wallet,pump.signature]))!.id;}
@@ -82,7 +84,7 @@ export class Domain {
     for (const service of c.services) { compileSchema(service.requestSchema); compileSchema(service.responseSchema); }
     if(tokenId&&!pump){const routing=await new Token2022FeeRouting().verify({mint:c.mint,creator:profile.primary_wallet,treasury:process.env.INDUSTRY_FEE_TREASURY});ensure(routing.status!=='FAILED','FEE_ROUTING_VERIFICATION_FAILED',routing.reason,409);}
     const id=pump?.id||randomUUID(), slug=slugify(c.name)+'-'+id.slice(0,6);
-    await tx.query('INSERT INTO businesses(id,creator_profile_id,token_id,mode,mandate,routing_status,token_mode,mint,creator_wallet,routing_provider,routing_evidence) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)',[id,profile.id,tokenId,pump&&pumpConfig().network==='mainnet-beta'?'MAINNET_TOKEN':tokenId?'DEVNET_TOKEN':'SANDBOX',c.mission,pump?'VERIFIED':tokenId?'PENDING':'NOT_APPLICABLE',pump?'PUMP':null,pump?c.mint:null,pump?profile.primary_wallet:null,pump?'pump.fun':null,JSON.stringify(pump?.evidence||{})]);
+    await tx.query('INSERT INTO businesses(id,creator_profile_id,token_id,mode,mandate,routing_status,token_mode,mint,creator_wallet,routing_provider,routing_evidence) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)',[id,profile.id,tokenId,platformOperated?'PLATFORM_OPERATED':pump&&pumpConfig().network==='mainnet-beta'?'MAINNET_TOKEN':tokenId?'DEVNET_TOKEN':'SANDBOX',c.mission,pump?'VERIFIED':tokenId?'PENDING':'NOT_APPLICABLE',pump?'PUMP':null,pump?c.mint:null,pump?profile.primary_wallet:null,pump?'pump.fun':null,JSON.stringify(pump?.evidence||{})]);
     if(pump){const e=pump.evidence;await tx.query('INSERT INTO pump_businesses(business_id,launch_id,network,mint,creator,treasury,sharing_config,quote_mint,quote_decimals,quote_token_program,routing_status,routing_evidence,launch_slot) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)',[id,pump.launchId,pumpConfig().network,e.mint,e.creator,e.treasury,e.sharingConfig,e.quoteMint,e.quoteDecimals,e.quoteTokenProgram,e.status,JSON.stringify(e),pump.launchSlot]);}
     await tx.query(`INSERT INTO agents(id,business_id,slug,creator_profile_id,name,ticker,icon_url,description,mission,job_type,category,tags,token_id,config,next_run_at) VALUES($1,$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,[id,slug,profile.id,c.name,c.ticker,c.icon?`/api/uploads/${c.icon}`:'',c.description,c.mission,c.jobType,c.category,JSON.stringify(c.tags),tokenId,JSON.stringify(c),c.schedule==='continuous'?new Date():c.schedule==='interval'?new Date(Date.now()+c.intervalMinutes*60000):null]);
     for (const tool of new Set(c.tools)) await tx.query('INSERT INTO agent_tools(agent_id,tool_key) VALUES($1,$2)',[id,tool]);
@@ -97,7 +99,7 @@ export class Domain {
     }
     if(c.initialOperatingBudget>0){ensure(testEconomy(),'TEST_FUNDING_DISABLED','Initial test allocation requires demo mode');const transaction=await fundBusiness(tx,profile,id,micro(c.initialOperatingBudget),'BUSINESS_OPERATING',`initial-operating:${id}`);await ledger(tx,id,'credit','funding',micro(c.initialOperatingBudget),`initial-operating:${id}`,{transaction,account:'BUSINESS_OPERATING'});}
     await tx.query(`INSERT INTO jobs(agent_id,type,trigger_type,payload,idempotency_key) VALUES($1,'BOOT','creation',$2,$3)`,[id,JSON.stringify({input:{topic:c.scope||c.mission}}),`boot:${id}`]);
-    await event(tx,id,'created','Agent created; first operational run queued');
+    await event(tx,id,'created',platformOperated?'INDUSTRY-operated business created; first operational run queued':'Agent created; first operational run queued');
     return {id,slug:pump?c.mint:slug,businessId:id};
   }
   async addService(tx: Queryable, agentId: string, input: unknown) {
@@ -199,17 +201,17 @@ export class Domain {
         return {agent:await agentView(tx,a),own,jobs,memories,entries,relationships,ownedServices:own?(await tx.query('SELECT id,name,price_amount,active FROM agent_services WHERE agent_id=$1',[a.id])).rows:[]};
       }
       if(op==='services/list' || op==='services/get') {
-        const rows=(await tx.query(`SELECT s.*,a.name agent_name,a.slug agent_slug,a.job_type agent_role,a.mission agent_mission,a.ticker,CASE WHEN a.token_id IS NOT NULL OR NULLIF(trim(a.icon_url),'') IS NOT NULL THEN '/api/network/images/'||a.id::text END image_url,w.public_address treasury_address,w.network external_network,'sandbox' network,'internal' settlement FROM agent_services s JOIN agents a ON a.id=s.agent_id LEFT JOIN wallet_accounts w ON w.agent_id=a.id WHERE (s.active OR $${op==='services/get'?'2':'1'}::boolean) AND a.visibility='public' ${op==='services/get'?'AND s.id=$1':body.agentId?'AND s.agent_id=$2':''} ORDER BY s.created_at ASC,s.id ASC ${op==='services/list'&&body.agentId?'LIMIT 32':''}`,op==='services/get'?[jid.parse(body.id),true]:body.agentId?[false,jid.parse(body.agentId)]:[false])).rows;
+        const rows=(await tx.query(`SELECT s.*,(SELECT mode='PLATFORM_OPERATED' FROM businesses WHERE id=a.business_id) platform_operated,a.name agent_name,a.slug agent_slug,a.job_type agent_role,a.mission agent_mission,a.ticker,CASE WHEN a.token_id IS NOT NULL OR NULLIF(trim(a.icon_url),'') IS NOT NULL THEN '/api/network/images/'||a.id::text END image_url,w.public_address treasury_address,w.network external_network,'sandbox' network,'internal' settlement FROM agent_services s JOIN agents a ON a.id=s.agent_id LEFT JOIN wallet_accounts w ON w.agent_id=a.id WHERE (s.active OR $${op==='services/get'?'2':'1'}::boolean) AND a.visibility='public' ${op==='services/get'?'AND s.id=$1':body.agentId?'AND s.agent_id=$2':''} ORDER BY s.created_at ASC,s.id ASC ${op==='services/list'&&body.agentId?'LIMIT 32':''}`,op==='services/get'?[jid.parse(body.id),true]:body.agentId?[false,jid.parse(body.agentId)]:[false])).rows;
         const result=[];
         for (const s of rows) {
           const a=(await one(tx,'SELECT * FROM agents WHERE id=$1',[s.agent_id]))!;
           const stats=(await one(tx,`SELECT count(*) FILTER(WHERE r.status IN ('succeeded','failed')) n,count(DISTINCT r.requester_profile_id) FILTER(WHERE r.status='succeeded') customers,count(*) FILTER(WHERE r.status='failed') failures,count(*) FILTER(WHERE r.status='succeeded') completed,count(*) FILTER(WHERE r.status='succeeded' AND r.completed_at>now()-interval '1 day') jobs24h,COALESCE(sum(p.amount) FILTER(WHERE p.status='settled' AND r.completed_at>now()-interval '1 day'),0) volume24h,COALESCE(sum(p.amount) FILTER(WHERE p.status='settled'),0) revenue,COALESCE(percentile_cont(0.5) WITHIN GROUP(ORDER BY extract(epoch FROM r.completed_at-r.created_at)) FILTER(WHERE r.status='succeeded'),0) latency FROM service_requests r JOIN payments p ON p.id=r.payment_id WHERE service_id=$1`,[s.id]))!;
-          result.push({...s,customers:Number(stats.customers),failures:Number(stats.failures),price:usd(Number(s.price_amount)),lifecycle:(await metrics(tx,a)).lifecycle,jobs:Number(stats.completed),jobs24h:Number(stats.jobs24h),volume24h:usd(Number(stats.volume24h)),latency:Number(stats.latency),success:Number(stats.n)?Number(stats.completed)/Number(stats.n)*100:0,revenue:usd(Number(stats.revenue))});
+          result.push({...s,accountingUnit:internalUnit(),customers:Number(stats.customers),failures:Number(stats.failures),price:usd(Number(s.price_amount)),lifecycle:(await metrics(tx,a)).lifecycle,jobs:Number(stats.completed),jobs24h:Number(stats.jobs24h),volume24h:usd(Number(stats.volume24h)),latency:Number(stats.latency),success:Number(stats.n)?Number(stats.completed)/Number(stats.n)*100:0,revenue:usd(Number(stats.revenue))});
         }
         if(op==='services/get') {ensure(result[0],'NOT_FOUND','Service not found',404);return {...result[0],recentWork:(await tx.query("SELECT j.id,j.finished_at,j.type FROM service_requests r JOIN jobs j ON j.id=r.job_id WHERE r.service_id=$1 AND r.status='succeeded' ORDER BY j.finished_at DESC LIMIT 8",[body.id])).rows};} return result;
       }
       if(op==='activity') {
-        return (await tx.query(`SELECT e.id,e.agent_id,a.slug agent_slug,a.name agent_name,a.ticker agent_ticker,CASE WHEN a.token_id IS NOT NULL OR NULLIF(trim(a.icon_url),'') IS NOT NULL THEN '/api/network/images/'||a.id::text END image_url,b.name related_name,e.job_id,CASE WHEN ej.agent_id=e.agent_id THEN e.job_id WHEN er.requester_agent_id=e.agent_id THEN er.parent_job_id END live_job_id,e.action,e.amount,e.description,e.created_at FROM activity_events e LEFT JOIN agents a ON a.id=e.agent_id LEFT JOIN agents b ON b.id=e.related_agent_id LEFT JOIN jobs ej ON ej.id=e.job_id LEFT JOIN service_requests er ON er.job_id=e.job_id WHERE e.public ${body.agentId?'AND (e.agent_id=$2 OR e.related_agent_id=$2)':''} ORDER BY e.created_at DESC,e.id DESC LIMIT $1`,body.agentId?[Math.min(100,Number(body.limit)||30),jid.parse(body.agentId)]:[Math.min(100,Number(body.limit)||30)])).rows.map(e=>({...e,amount:e.amount===null?null:usd(Number(e.amount))}));
+        return (await tx.query(`SELECT e.id,e.agent_id,(SELECT mode='PLATFORM_OPERATED' FROM businesses WHERE id=a.business_id) platform_operated,a.slug agent_slug,a.name agent_name,a.ticker agent_ticker,CASE WHEN a.token_id IS NOT NULL OR NULLIF(trim(a.icon_url),'') IS NOT NULL THEN '/api/network/images/'||a.id::text END image_url,b.name related_name,e.job_id,CASE WHEN ej.agent_id=e.agent_id THEN e.job_id WHEN er.requester_agent_id=e.agent_id THEN er.parent_job_id END live_job_id,e.action,e.amount,e.description,e.created_at FROM activity_events e LEFT JOIN agents a ON a.id=e.agent_id LEFT JOIN agents b ON b.id=e.related_agent_id LEFT JOIN jobs ej ON ej.id=e.job_id LEFT JOIN service_requests er ON er.job_id=e.job_id WHERE e.public ${body.agentId?'AND (e.agent_id=$2 OR e.related_agent_id=$2)':''} ORDER BY e.created_at DESC,e.id DESC LIMIT $1`,body.agentId?[Math.min(100,Number(body.limit)||30),jid.parse(body.agentId)]:[Math.min(100,Number(body.limit)||30)])).rows.map(e=>({...e,amount:e.amount===null?null:usd(Number(e.amount))}));
       }
       if(op==='network/stats') {
         const agents=(await tx.query("SELECT * FROM agents WHERE visibility='public'")).rows;

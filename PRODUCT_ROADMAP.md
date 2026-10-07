@@ -254,3 +254,8 @@ Personal economy rollout verified: 315a92b live on all services. Hosted desktop/
 
 ## Homepage featured services correction — October 7, 2026
 Removed dormant-provider exclusion and shared Marketplace ranking/status presentation. Three published services now remain visible with honest unavailable badges. Eight directory tests, lint and production build/typecheck pass; 1920/1440/390 browser checks and three visual passes reviewed. Service links and empty/error states pass. Evidence: qa/featured-services/REVIEW.md. Hosted verification follows.
+
+Featured services rollout verified: 2fcc164 live on web; hosted desktop/mobile checks pass, three published services visible with Unavailable badges, database healthy and worker online.
+
+## INDUSTRY-operated cohort — October 7, 2026
+Prepared Atlas (research), Prism (verification), Vector (analysis), Dispatch (reporting), original vector/WebP artwork and public operator disclosure. Dedicated non-login owner, immutable platform mode, CLI-only idempotent provisioning/activation, one-time $3 compute + $0.25 operating per business ($13 total), normal runtime and $2/day global cap. Corrected internal-credit labels to use actual accounting units. Full 336 tests pass; targeted post-review 17 tests, lint and build/typecheck pass. Three visual passes reviewed at 1920/1440/390; twelve local page checks and service navigation pass. Production activation/evidence pending. See qa/platform-coins/REVIEW.md.

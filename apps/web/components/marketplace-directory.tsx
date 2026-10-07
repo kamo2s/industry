@@ -25,13 +25,13 @@ function ServiceCard({entry}:{entry:ServiceEntry}){
  const sample=serviceSample(s),RoleIcon=icons[entry.provider?.job_type||s.agent_role||'']||Boxes;
  return <article className="mp-service-card" data-tone={serviceTone(s.category)} data-service-id={s.id}>
   <span className="mp-status" data-status={state} title={`Provider: ${availability}${entry.provider?.operational?.state?' · '+entry.provider.operational.state:''}`}>{state==='Unknown'?'Status unavailable':state}</span>
-  <Link href={'/coins/'+s.agent_slug} className="mp-provider" aria-label={`Open provider ${s.agent_name}`}><span className="mp-portrait-ring"><CoinPortrait name={s.agent_name} ticker={s.ticker||s.agent_name} src={s.image_url} size={62}/></span><span className="mp-provider-copy"><strong title={s.agent_name}>{s.agent_name}</strong><small>${s.ticker||s.agent_name}</small><span><RoleIcon size={13}/>{entry.provider?.job_type||s.agent_role||'Role unavailable'}</span></span></Link>
+  <Link href={'/coins/'+s.agent_slug} className="mp-provider" aria-label={`Open provider ${s.agent_name}`}><span className="mp-portrait-ring"><CoinPortrait name={s.agent_name} ticker={s.ticker||s.agent_name} src={s.image_url} size={62}/></span><span className="mp-provider-copy"><strong title={s.agent_name}>{s.agent_name}</strong><small>{s.platform_operated?'Operated by INDUSTRY':'$'+(s.ticker||s.agent_name)}</small><span><RoleIcon size={13}/>{entry.provider?.job_type||s.agent_role||'Role unavailable'}</span></span></Link>
   <h2><Link href={'/services/'+s.id} title={s.name}>{s.name}</Link></h2>
   <p className="mp-description" title={s.description}>{s.description}</p>
   <div className="mp-chips" aria-label="Service category and contract outputs">{serviceChips(s).map(c=><span key={c}>{c}</span>)}</div>
   <div className="mp-price-row"><div><strong>{money(s.price,Math.min(6,Math.max(3,(String(s.price).split('.')[1]||'').length)))}</strong><span> / order</span></div><span title="Median time from order creation to successful completion"><Clock size={13}/>{delivery(s)}{s.jobs>0&&s.latency>0&&<small>median</small>}</span></div>
   <div className="mp-performance"><span title="All-time successful service orders"><Boxes size={13}/>{number(s.jobs)} {s.jobs===1?'job':'jobs'}</span><span title={sample?`${s.jobs} succeeded / ${sample} completed or failed orders. Cancelled and unfinished orders excluded.`:'No completed or failed orders yet'}><ShieldCheck size={13}/>{sample?`${Math.floor(s.success*10)/10}% success`:'No history'}</span></div>
-  <div className="mp-sample">{s.network==='sandbox'?'TEST_USDC credits':s.network==='devnet'?'Devnet credits':'Accounting credits'}{sample>0&&sample<10?` · ${sample} measured ${sample===1?'order':'orders'}`:''}</div>
+  <div className="mp-sample">{s.accountingUnit||'Accounting credits'}{sample>0&&sample<10?` · ${sample} measured ${sample===1?'order':'orders'}`:''}</div>
   <div className="mp-card-actions"><Link href={'/services/'+s.id} className="mp-primary">View Service<ArrowRight size={14}/></Link><Link href={'/coins/'+s.agent_slug+'?tab=live'}>Watch Live</Link></div>
  </article>;
 }
