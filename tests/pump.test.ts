@@ -1,7 +1,7 @@
 import { metrics } from '../packages/db/metrics';
 import { beforeAll,afterAll,it,expect,vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
-import { Keypair,AddressLookupTableAccount,VersionedTransaction,ComputeBudgetProgram,SystemProgram } from '@solana/web3.js';
+import { MessageV1,Keypair,AddressLookupTableAccount,VersionedTransaction,ComputeBudgetProgram,SystemProgram } from '@solana/web3.js';
 import { NATIVE_MINT,TOKEN_PROGRAM_ID,TOKEN_2022_PROGRAM_ID,MintLayout } from '@solana/spl-token';
 import { BN } from '@coral-xyz/anchor';
 import bs58 from 'bs58';
@@ -104,3 +104,21 @@ it('token metadata links the exact mint to its INDUSTRY page',async()=>{
  const service=new PumpLaunchService(db,async()=>({})),metadata=await service.metadata(row.id);
  expect(metadata.external_url).toBe(`https://industry.example/coins/${row.mint}`);expect(metadata.website).toBe(metadata.external_url);
 });
+
+
+it('reconciles version-1 history without skipping receipts or crediting duplicates',async()=>{
+ const chain=chainReceipt(),signature='version-one-distribution';
+ const keys=chain.transaction.message.getAccountKeys();
+ chain.version=1;chain.transaction.signatures=[signature];
+ chain.transaction.message=new MessageV1({header:{numRequiredSignatures:1,numReadonlySignedAccounts:0,numReadonlyUnsignedAccounts:2},staticAccountKeys:Array.from({length:keys.length},(_,i)=>keys.get(i)),recentBlockhash:Keypair.generate().publicKey.toBase58(),compiledInstructions:[]});
+ const getTransaction=vi.fn(async(_signature:string,options:any)=>{if(options.maxSupportedTransactionVersion<1)throw new Error('Unsupported transaction version');return chain;});
+ const rpc:any={getSignaturesForAddress:async()=>[{signature,slot:101}],getTransaction};
+ const collector=new PumpCollector(db),row=(await one(db,'SELECT * FROM pump_businesses WHERE business_id=$1',[business]))!;
+ await collector.reconcile(rpc,row,state);await collector.reconcile(rpc,row,state);
+ expect(getTransaction).toHaveBeenCalledWith(signature,{commitment:'finalized',maxSupportedTransactionVersion:1});
+ expect((await one(db,'SELECT count(*) n FROM pump_receipts WHERE signature=$1',[signature]))!.n).toBe(1);
+ expect((await one(db,'SELECT processed FROM pump_scan_signatures WHERE signature=$1',[signature]))!.processed).toBe(true);
+ chain.meta.postBalances[3]=chain.meta.preBalances[3];
+ expect(()=>parseFeeReceipts(chain,signature,'devnet',business,state)).toThrow('balance');
+});
+

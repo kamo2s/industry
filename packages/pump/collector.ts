@@ -36,7 +36,7 @@ export class PumpCollector {
   for(const r of rows){try{if(r.price_proof)await this.db.transaction(tx=>allocatePumpReceipt(tx,r.id));else{const price=await receiptPrice(r.quote_mint,Math.floor(new Date(r.block_time).getTime()/1000));await this.db.transaction(tx=>convertPumpReceipt(tx,r.id,price));}}catch(e){await this.db.query("UPDATE pump_receipts SET conversion_error=$2,pricing_attempted_at=now() WHERE id=$1 AND allocation_status<>'ALLOCATED'",[r.id,reason(e)]);}}
  }
  private async ingest(rpc:Connection,row:Row,state:RoutingState,signature:string){
-  const chain=await rpc.getTransaction(signature,{commitment:'finalized',maxSupportedTransactionVersion:0});ensure(chain?.meta,'PUMP_HISTORY_UNAVAILABLE','Finalized transaction history is unavailable; keep reconciliation pending',503);
+  const chain=await rpc.getTransaction(signature,{commitment:'finalized',maxSupportedTransactionVersion:1});ensure(chain?.meta,'PUMP_HISTORY_UNAVAILABLE','Finalized transaction history is unavailable; keep reconciliation pending',503);
   if(!chain.meta.err){ensure(chain.slot>=Number(row.launch_slot),'PUMP_RECEIPT','Receipt predates business launch');const receipts=parseFeeReceipts(chain,signature,row.network,row.business_id,state);await this.db.transaction(async tx=>{for(const receipt of receipts)await ingestPumpReceipt(tx,receipt);});}
   return chain;
  }
@@ -59,7 +59,7 @@ export class PumpCollector {
   await this.db.transaction(async tx=>{await tx.query("UPDATE pump_businesses SET routing_status='VERIFIED',routing_evidence=$2,graduated=$3 WHERE business_id=$1",[row.business_id,JSON.stringify(state),state.graduated]);await tx.query("UPDATE businesses SET routing_status='VERIFIED',routing_evidence=$2 WHERE id=$1",[row.business_id,JSON.stringify(state)]);});
   await this.reconcile(rpc,row,state);
   const outstanding=(await this.db.query("SELECT * FROM pump_collection_attempts WHERE business_id=$1 AND state IN ('prepared','submitted','unknown') ORDER BY created_at",[row.business_id])).rows;
-  for(const a of outstanding){const chain=await rpc.getTransaction(a.signature,{commitment:'finalized',maxSupportedTransactionVersion:0});if(chain){await this.ingest(rpc,row,state,a.signature);await this.db.query('UPDATE pump_collection_attempts SET state=$2,completed_at=now() WHERE id=$1',[a.id,chain.meta?.err?'failed':'confirmed']);}else if(await rpc.getBlockHeight('finalized')>Number(a.last_valid_height)){await this.db.query("UPDATE pump_collection_attempts SET state='expired',completed_at=now() WHERE id=$1",[a.id]);}else{if(pumpConfig().collection){requirePumpCollection();ensure(process.env.EMERGENCY_PAUSE!=='true','PAUSED','Collection paused');await rpc.sendRawTransaction(Buffer.from(a.signed_transaction,'base64'),{skipPreflight:false,maxRetries:2}).catch(()=>undefined);}return;}}
+  for(const a of outstanding){const chain=await rpc.getTransaction(a.signature,{commitment:'finalized',maxSupportedTransactionVersion:1});if(chain){await this.ingest(rpc,row,state,a.signature);await this.db.query('UPDATE pump_collection_attempts SET state=$2,completed_at=now() WHERE id=$1',[a.id,chain.meta?.err?'failed':'confirmed']);}else if(await rpc.getBlockHeight('finalized')>Number(a.last_valid_height)){await this.db.query("UPDATE pump_collection_attempts SET state='expired',completed_at=now() WHERE id=$1",[a.id]);}else{if(pumpConfig().collection){requirePumpCollection();ensure(process.env.EMERGENCY_PAUSE!=='true','PAUSED','Collection paused');await rpc.sendRawTransaction(Buffer.from(a.signed_transaction,'base64'),{skipPreflight:false,maxRetries:2}).catch(()=>undefined);}return;}}
   const pending=await pendingFees(rpc,state);await this.db.query("UPDATE pump_businesses SET pending_raw=$2,sweepable_raw=$3,observed_at=now(),collection_state='observed',collection_error=NULL WHERE business_id=$1",[row.business_id,pending.total.toString(),pending.amm.toString()]);
   if(!pumpConfig().collection)return;requirePumpCollection();ensure(process.env.EMERGENCY_PAUSE!=='true','PAUSED','Collection paused');
   // Other quote assets are preserved/reconciled, but require an approved oracle
@@ -85,3 +85,4 @@ export class PumpCollector {
   }finally{signer.secretKey.fill(0);}
  }
 }
+
