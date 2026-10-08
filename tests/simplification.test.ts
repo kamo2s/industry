@@ -5,7 +5,7 @@ import {networkFocus,type BusinessGraph} from '../packages/core/network-view';
 import {searchReserve} from '../packages/agent/openrouter-client';
 describe('guided creation',()=>{
  it('generates valid bounded launches for every existing role without changing existing policy defaults',()=>{
-  for(const role of templates){const d=guidedTemplate(newLaunchDraft(),role);expect(()=>agentSchema.parse({...d,name:'Simple research',ticker:'SIMPLE',description:'Research public information',scope:'Review official public documentation.'})).not.toThrow();expect(d.policy.autoHire).toBe(true);expect(d.schedule).toBe('continuous');expect(d.policy.maxRunCost).toBe(.1);expect(d.services[0].price).toBe(.01);expect(d.services[0].price).toBeLessThanOrEqual(d.policy.maxPurchase);}
+  for(const role of templates){const d=guidedTemplate(newLaunchDraft(),role);expect(()=>agentSchema.parse({...d,name:'Simple research',ticker:'SIMPLE',description:'Research public information',scope:'Review official public documentation.'})).not.toThrow();expect(d.policy.autoHire).toBe(true);expect(d.schedule).toBe('continuous');expect(d.policy.maxRunCost).toBe(.1);expect(d.services[0].price).toBe(1);expect(d.services[0].price).toBeLessThanOrEqual(d.policy.maxPurchase);}
   expect(defaultPolicy.maxRunCost).toBe(.02);
  });
  it('leaves room for the current search reservation plus planning and synthesis',()=>{

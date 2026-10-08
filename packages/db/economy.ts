@@ -58,7 +58,7 @@ export class DevPaymentProvider implements PaymentProvider {
     return payment;
   }
 }
-export async function purchase(tx: Queryable, profile: Row, serviceId: string, input: any, key: string, buyerId?: string, parentJobId?: string) {
+export async function purchase(tx: Queryable, profile: Row, serviceId: string, input: any, key: string, buyerId?: string, parentJobId?: string, expectedPrice?:number) {
   ensure(testEconomy()||process.env.INTERNAL_LEDGER_ENABLED==='true','INTERNAL_PAYMENTS_DISABLED','Internal payments require an operator-enabled and funded ledger',503);
   await requireEnabled(tx,'payments');
   const scopedKey=hash(`${profile.id}:request:${key}`);
@@ -69,6 +69,7 @@ export async function purchase(tx: Queryable, profile: Row, serviceId: string, i
   }
   const s=await one(tx,'SELECT s.*,a.paused,a.creator_profile_id,a.config FROM agent_services s JOIN agents a ON a.id=s.agent_id WHERE s.id=$1 AND s.active AND a.visibility=\'public\' FOR UPDATE OF a',[serviceId]);
   ensure(s && !s.paused,'SERVICE_UNAVAILABLE','Service is unavailable',409);
+  if(expectedPrice!==undefined)ensure(Number(s.price_amount)===micro(expectedPrice),'PRICE_CHANGED','Service price changed; review the new price before ordering',409);
   validateSchema(s.request_schema,input);
   const seller=await one(tx,'SELECT * FROM agents WHERE id=$1',[s.agent_id]);
   ensure(!seller!.terminated_at&&!seller!.config.policy.killSwitch,'SERVICE_UNAVAILABLE','Service is unavailable',409);ensure(!seller!.token_id||(await one(tx,'SELECT routing_status FROM businesses WHERE id=$1',[seller!.business_id]))?.routing_status==='VERIFIED','FEE_ROUTING_VERIFICATION_FAILED','FEE ROUTING VERIFICATION FAILED',409);
@@ -78,13 +79,14 @@ export async function purchase(tx: Queryable, profile: Row, serviceId: string, i
   if (buyerId) {
     buyer=await one(tx,'SELECT * FROM agents WHERE id=$1 FOR UPDATE',[buyerId]);
     ensure(buyer && buyer.creator_profile_id===profile.id,'FORBIDDEN','You do not own the requesting agent',403);
+    ensure(!buyer.config.policy.separateServiceBudget||expectedPrice!==undefined,'PRICE_REQUIRED','Review the current service price before ordering',409);
     ensure(buyer.id!==s.agent_id,'SELF_PURCHASE','An agent cannot hire itself');
     ensure(buyer.config.tools.includes('marketplace'),'TOOL_DENIED','Marketplace tool is disabled');
     const usage=(await one(tx,`SELECT COALESCE(sum(p.amount),0) spend,count(*) n FROM service_requests r JOIN payments p ON p.id=r.payment_id WHERE r.requester_agent_id=$1 AND r.created_at>date_trunc('day',now()) AND p.status<>'refunded'`,[buyerId]))!;
     const run=parentJobId ? await one(tx,`SELECT COALESCE(sum(p.amount),0) spend,count(*) n FROM service_requests r JOIN payments p ON p.id=r.payment_id WHERE r.parent_job_id=$1 AND p.status<>'refunded'`,[parentJobId]) : {spend:0,n:0};
     const parent=parentJobId?await one(tx,'SELECT payload FROM jobs WHERE id=$1',[parentJobId]):undefined;
-    const spend=await operatingSpend(tx,buyer.id);
-    authorizePurchase(buyer.config.policy as Policy,{amount:Number(s.price_amount),balance:micro((await metrics(tx,buyer)).operatingBalance),spentToday:spend.day,spentHour:spend.hour,purchasesToday:Number(usage.n),purchasesRun:Number(run!.n),spentRun:Number(run!.spend)+Number(parent?.payload.measuredCost||0),category:s.category,network:'sandbox',counterparty:s.agent_id,emergency:process.env.EMERGENCY_PAUSE==='true',paused:buyer.paused});
+    const spend=await operatingSpend(tx,buyer.id,buyer.config.policy.separateServiceBudget?'services':'combined');
+    authorizePurchase(buyer.config.policy as Policy,{amount:Number(s.price_amount),balance:micro((await metrics(tx,buyer)).operatingBalance),spentToday:spend.day,spentHour:spend.hour,purchasesToday:Number(usage.n),purchasesRun:Number(run!.n),spentRun:Number(run!.spend)+(buyer.config.policy.separateServiceBudget?0:Number(parent?.payload.measuredCost||0)),category:s.category,network:'sandbox',counterparty:s.agent_id,emergency:process.env.EMERGENCY_PAUSE==='true',paused:buyer.paused});
   }
   const payment=await new DevPaymentProvider().reserve(tx,s,profile,buyer,scopedKey);
   const job=(await one(tx,`INSERT INTO jobs(agent_id,type,trigger_type,payload,idempotency_key) VALUES($1,'SERVICE','paid',$2,$3) RETURNING id`,[s.agent_id,JSON.stringify({input,serviceId:s.id}),`request:${scopedKey}`]))!;

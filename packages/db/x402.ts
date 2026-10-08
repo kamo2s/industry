@@ -88,11 +88,11 @@ export class ServicePayments {
     ensure(service&&service.active&&!service.paused&&!service.terminated_at,'SERVICE_UNAVAILABLE','Seller was paused before settlement',409);
     if(!q.requester_agent_id)return;
     const agent=(await one(tx,'SELECT * FROM agents WHERE id=$1 FOR UPDATE',[q.requester_agent_id]))!;
-    const policy=policySchema.parse(agent.config.policy),amount=Number(q.requirements.amount),spend=await operatingSpend(tx,agent.id);
+    const policy=policySchema.parse(agent.config.policy),amount=Number(q.requirements.amount),spend=await operatingSpend(tx,agent.id,agent.config.policy.separateServiceBudget?'services':'combined');
     const parent=await one(tx,"SELECT * FROM jobs WHERE id=$1 AND status='running'",[q.parent_job_id]);
     ensure(parent&&!agent.terminated_at,'STALE_LEASE','Buyer run is no longer active',409);
     const counts=(await one(tx,`SELECT count(*) FILTER(WHERE created_at>now()-interval '24 hours') AS "day",count(*) FILTER(WHERE parent_job_id=$2) run,COALESCE(sum((requirements->>'amount')::bigint) FILTER(WHERE parent_job_id=$2),0) run_spend FROM payment_attempts WHERE requester_agent_id=$1 AND status IN ('reserved','signed','verifying','settling','settled')`,[agent.id,parent.id]))!;
-    authorizePurchase(policy,{amount,balance:amount,spentToday:Math.max(0,spend.day-amount),spentHour:Math.max(0,spend.hour-amount),purchasesToday:Math.max(0,Number(counts.day)-1),purchasesRun:Math.max(0,Number(counts.run)-1),spentRun:Math.max(0,Number(counts.run_spend)-amount)+Number(parent.payload.measuredCost||0),category:service.category,network:'devnet',asset:DEVNET_USDC,counterparty:service.agent_id,emergency:false,paused:agent.paused});
+    authorizePurchase(policy,{amount,balance:amount,spentToday:Math.max(0,spend.day-amount),spentHour:Math.max(0,spend.hour-amount),purchasesToday:Math.max(0,Number(counts.day)-1),purchasesRun:Math.max(0,Number(counts.run)-1),spentRun:Math.max(0,Number(counts.run_spend)-amount)+(policy.separateServiceBudget?0:Number(parent.payload.measuredCost||0)),category:service.category,network:'devnet',asset:DEVNET_USDC,counterparty:service.agent_id,emergency:false,paused:agent.paused});
     ensure(agent.config.tools.includes('marketplace')&&amount<=micro(policy.maxPurchase),'TOOL_DENIED','Payment permissions were revoked');
   }
   private async finalize(id:string,receipt:SettleResponse){
@@ -136,9 +136,9 @@ export class ServicePayments {
     ensure(attempt.status==='quoted','PAYMENT_PENDING','This request already reserved spending; retry after recovery',409);
     const service=(await one(tx,'SELECT * FROM agent_services WHERE id=$1 AND active',[q.service_id]))!;
     ensure(service&&service.agent_id!==agent.id,'SERVICE_UNAVAILABLE','Seller unavailable or self-purchase');
-    const spend=await operatingSpend(tx,agent.id);
+    const spend=await operatingSpend(tx,agent.id,agent.config.policy.separateServiceBudget?'services':'combined');
     const count=(await one(tx,`SELECT count(*) FILTER(WHERE created_at>now()-interval '24 hours') AS "day",count(*) FILTER(WHERE parent_job_id=$2) run,COALESCE(sum((requirements->>'amount')::bigint) FILTER(WHERE parent_job_id=$2),0) run_spend FROM payment_attempts WHERE requester_agent_id=$1 AND status IN ('reserved','signed','verifying','settling','settled')`,[agent.id,job.id]))!;
-    authorizePurchase(agent.config.policy,{amount:Number(q.requirements.amount),balance,spentToday:spend.day,spentHour:spend.hour,purchasesToday:Number(count.day),purchasesRun:Number(count.run),spentRun:Number(count.run_spend)+Number(job.payload.measuredCost||0),category:service.category,network:'devnet',asset:DEVNET_USDC,counterparty:service.agent_id,emergency:false,paused:agent.paused});
+    authorizePurchase(agent.config.policy,{amount:Number(q.requirements.amount),balance,spentToday:spend.day,spentHour:spend.hour,purchasesToday:Number(count.day),purchasesRun:Number(count.run),spentRun:Number(count.run_spend)+(agent.config.policy.separateServiceBudget?0:Number(job.payload.measuredCost||0)),category:service.category,network:'devnet',asset:DEVNET_USDC,counterparty:service.agent_id,emergency:false,paused:agent.paused});
     await tx.query("UPDATE payment_attempts SET status='reserved',updated_at=now() WHERE id=$1",[q.id]);
     const key=(await one(tx,"SELECT public_address,encrypted_key_reference FROM wallet_accounts WHERE agent_id=$1 AND network='devnet'",[agent.id]))!;
     ensure(key,'SIGNER_UNAVAILABLE','A devnet treasury is required',503);return {encryptedKey:key.encrypted_key_reference,wallet:key.public_address};

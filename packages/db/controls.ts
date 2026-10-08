@@ -16,13 +16,13 @@ export function requireAdmin(profile:Row|undefined) {
 export async function audit(tx:Queryable,profile:Row,action:string,agentId:string|null,details:Record<string,unknown>={}){
   await tx.query('INSERT INTO audit_logs(profile_id,agent_id,action,details) VALUES($1,$2,$3,$4)',[profile.id,agentId,action,JSON.stringify(details)]);
 }
-export async function operatingSpend(tx:Queryable,agentId:string) {
+export async function operatingSpend(tx:Queryable,agentId:string,kind:'combined'|'compute'|'services'='combined') {
   const row=(await one(tx,`SELECT COALESCE(sum(amount) FILTER(WHERE created_at>now()-interval '1 hour'),0) AS "hour",
     COALESCE(sum(amount),0) AS "day" FROM ledger_entries WHERE agent_id=$1 AND direction='debit'
-    AND category IN ('compute','tool','service_purchase') AND created_at>now()-interval '24 hours'`,[agentId]))!;
+    AND (($2='combined' AND category IN ('compute','tool','service_purchase')) OR ($2='compute' AND category IN ('compute','tool')) OR ($2='services' AND category='service_purchase')) AND created_at>now()-interval '24 hours'`,[agentId,kind]))!;
   const pending=(await one(tx,`SELECT COALESCE(sum((requirements->>'amount')::bigint) FILTER(WHERE created_at>now()-interval '1 hour'),0) AS "hour",
     COALESCE(sum((requirements->>'amount')::bigint),0) AS "day" FROM payment_attempts WHERE requester_agent_id=$1
     AND status IN ('reserved','signed','verifying','settling')`,[agentId]))!;
   const running=(await one(tx,"SELECT COALESCE(sum((payload->>'measuredCost')::bigint),0) cost FROM jobs WHERE agent_id=$1 AND status='running'",[agentId]))!;
-  return {hour:Number(row.hour)+Number(pending.hour)+Number(running.cost),day:Number(row.day)+Number(pending.day)+Number(running.cost)};
+  return {hour:Number(row.hour)+(kind==='compute'?0:Number(pending.hour))+(kind==='services'?0:Number(running.cost)),day:Number(row.day)+(kind==='compute'?0:Number(pending.day))+(kind==='services'?0:Number(running.cost))};
 }

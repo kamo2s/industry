@@ -1,3 +1,4 @@
+import {minimumServicePrice} from './service-pricing';
 import {AppError,agentSchema,defaultPolicy,serviceSchema,type AgentInput} from './index';
 import {approvedModels,canonicalModelId} from './model-registry';
 import {applyTemplate,templatePresets} from './templates';
@@ -12,8 +13,8 @@ export function assertObserverOperation(operation:string){
 }
 
 export const autonomousLimits={
-  servicePrice:0.01,computeCredits:10,operatingBalance:1,
-  policy:{...defaultPolicy,maxRunCost:0.10,maxTools:3,autoHire:true,
+  servicePrice:minimumServicePrice,computeCredits:10,operatingBalance:1,
+  policy:{...defaultPolicy,separateServiceBudget:true,maxPurchase:10,maxRunCost:0.10,maxTools:3,autoHire:true,
     allowedNetworks:['sandbox'] as ('sandbox'|'devnet')[],purchasesPerRun:1,purchasesPerDay:4},
 };
 

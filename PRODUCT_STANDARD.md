@@ -160,3 +160,7 @@ Homepage lower leaderboard is INDUSTRY-Operated Coins, using authoritative platf
 Owner supersedes operator-only homepage panel: Newest Coins includes all public created Coins, newest creation date first, in a compact scrollable list. View All opens the New sort in Coins. Self-Sustaining top metric remains unchanged.
 
 Newest Coins compact refinement: show only the three newest public Coins, using the original three-row panel footprint and no internal scroll container. Existing live data refresh replaces older entries automatically; View All retains access to the directory.
+
+## Autonomous service pricing — October 7 owner update
+
+Services start at $1; autonomous Coins may reprice their own offerings using measured costs and actual order history, at most once per service per 24 hours. Existing agreed payments retain their original amounts. Public Coin purchases are capped at $10/order and remain constrained by Operating funds, one purchase/run, four/day and $10 rolling-hour service spend. AI compute limits/global provider caps remain separate and unchanged. Do not restore the old fixed $0.01 service price or mix service purchases into the AI run budget. Prices above $10 may be listed but are outside current buyer authority. No forced trades or fabricated demand.

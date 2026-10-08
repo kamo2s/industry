@@ -16,7 +16,7 @@ beforeAll(async()=>{vi.stubEnv('APP_MODE','demo');vi.stubEnv('WALLET_ENCRYPTION_
 afterEach(()=>vi.restoreAllMocks());
 afterAll(async()=>{await db.close();vi.unstubAllEnvs();});
 it('normalizes all nine launch activities, funding and service contracts without changing the mission',()=>{
- for(const role of templates){const original={...input('NORMALIZED'),jobType:role},c=autonomousLaunch(original,true);expect(c.autonomyVersion).toBe(1);expect(c.mission).toBe(original.mission);expect(c.scope).toBe(original.scope);expect(c.policy).toMatchObject({...autonomousLimits.policy,preferredCategories:expect.any(Array)});expect(c.schedule).toBe('continuous');expect(c.services).toHaveLength(1);expect(c.services[0]).toMatchObject({price:.01,active:true});expect(c.tools).toContain('marketplace');expect(c.initialBudget).toBe(10);expect(c.initialOperatingBudget).toBe(1);}
+ for(const role of templates){const original={...input('NORMALIZED'),jobType:role},c=autonomousLaunch(original,true);expect(c.autonomyVersion).toBe(1);expect(c.mission).toBe(original.mission);expect(c.scope).toBe(original.scope);expect(c.policy).toMatchObject({...autonomousLimits.policy,preferredCategories:expect.any(Array)});expect(c.schedule).toBe('continuous');expect(c.services).toHaveLength(1);expect(c.services[0]).toMatchObject({price:1,active:true});expect(c.tools).toContain('marketplace');expect(c.initialBudget).toBe(10);expect(c.initialOperatingBudget).toBe(1);}
  expect(autonomousLaunch(input('NO TEST MONEY'),false).initialBudget).toBe(0);
  expect(autonomousLaunch({...input('PUMP LIMITS'),tokenMode:'pump'},true).initialOperatingBudget).toBe(0);
  expect(()=>autonomousLaunch({...input('NO BRAIN'),brain:''},true)).toThrow('Choose an available AI model');
@@ -35,9 +35,9 @@ it('executes launch → planned supplier → delivered result → settlement wit
  const fetch=vi.spyOn(globalThis,'fetch').mockRejectedValue(new Error('No paid provider is permitted in this test'));
  const before=(await d.publicDispatch('agents/get',{id:buyer.id})).agent.metrics,supplierBefore=(await d.publicDispatch('agents/get',{id:seller.id})).agent.metrics;
  const claim=await d.worker('claim',{worker:'autonomous'}),result=await run(claim);expect(claim.agent.id).toBe(buyer.id);expect(result.output.delegation.status).toBe('succeeded');expect(result.output.delegation.execution).toMatchObject({providerCoinId:seller.id,separateJob:true,sameOwner:false,sameBrain:true});
- const work=await d.publicDispatch('marketplace/work');expect(work).toHaveLength(1);order=work[0];expect(order).toMatchObject({buyer_name:'AUTO SCOUT',seller_name:'AUTO VERIFY',amount:.01,status:'succeeded',payment_status:'settled'});expect(order.input).toBeUndefined();expect(order.output).toBeUndefined();expect(order.requester_profile_id).toBeUndefined();
+ const work=await d.publicDispatch('marketplace/work');expect(work).toHaveLength(1);order=work[0];expect(order).toMatchObject({buyer_name:'AUTO SCOUT',seller_name:'AUTO VERIFY',amount:1,status:'succeeded',payment_status:'settled'});expect(order.input).toBeUndefined();expect(order.output).toBeUndefined();expect(order.requester_profile_id).toBeUndefined();
  const after=(await d.publicDispatch('agents/get',{id:buyer.id})).agent.metrics,supplier=(await d.publicDispatch('agents/get',{id:seller.id})).agent.metrics;
- expect(after.operatingBalance).toBeCloseTo(before.operatingBalance-.01,6);expect(supplier.operatingBalance).toBeCloseTo(supplierBefore.operatingBalance+.01,6);expect(after.computeCredits).toBeLessThan(before.computeCredits);
+ expect(after.operatingBalance).toBeCloseTo(before.operatingBalance-1,6);expect(supplier.operatingBalance).toBeCloseTo(supplierBefore.operatingBalance+1,6);expect(after.computeCredits).toBeLessThan(before.computeCredits);
  expect((await d.publicDispatch('jobs/get',{id:order.job_id})).receipt.status).toBe('settled');expect((await d.publicDispatch('search',{q:'AUTO SCOUT'})).some((r:any)=>r.kind==='Work'&&r.href==='/jobs/'+order.job_id)).toBe(true);
  expect((await db.query("SELECT t.id FROM ledger_transactions t LEFT JOIN ledger_postings p ON p.transaction_id=t.id GROUP BY t.id HAVING count(p.*)<>2 OR sum(CASE p.direction WHEN 'credit' THEN p.amount ELSE -p.amount END)<>0")).rows).toEqual([]);
  expect(fetch).not.toHaveBeenCalled();
@@ -60,15 +60,12 @@ it('retains watchlists but never grants worker or administrator authority to cre
  await expect(d.worker('purchase',{id:order.job_id,lease:randomUUID(),serviceId:order.service_id,input:{claim:'Forged request'}})).rejects.toThrow();
  expect(await one(db,"SELECT count(*) n FROM service_requests")).toMatchObject({n:1});
 });
-it('refuses completion when measured compute plus the supplier exceed the shared run ceiling',async()=>{
+it('declines another purchase when Operating funds are exhausted while Compute remains available',async()=>{
  await db.query("UPDATE agents SET next_run_at=now()-interval '1 second' WHERE id=$1",[buyer.id]);
- const claim=await d.worker('claim',{worker:'combined-budget'}),service=(await d.publicDispatch('services/list')).find((s:any)=>s.agent_id===seller.id);
- await d.worker('purchase',{id:claim.job.id,lease:claim.job.lease,serviceId:service.id,input:{claim:'Verify the recorded public evidence'}});await run(await d.worker('claim',{worker:'supplier-budget',serviceOnly:true}));
- const policy=await d.worker('policy',{id:claim.job.id,lease:claim.job.lease});expect(policy.serviceSpentMicro).toBe(10000);
- const runs=[{kind:'model',provider:'test',name:'measured-overage',cost:95000}];await d.worker('usage',{id:claim.job.id,lease:claim.job.lease,cost:95000,runs});
- await expect(d.worker('complete',{id:claim.job.id,lease:claim.job.lease,cost:95000,runs,output:{summary:'Over-budget result'}})).rejects.toMatchObject({code:'RUN_LIMIT'});
- await d.worker('fail',{id:claim.job.id,lease:claim.job.lease,error:'Combined run budget exceeded',permanent:true});
- expect((await d.publicDispatch('jobs/get',{id:claim.job.id})).status).toBe('failed');
+ const claim=await d.worker('claim',{worker:'separate-budget'}),service=(await d.publicDispatch('services/list')).find((s:any)=>s.agent_id===seller.id);
+ await expect(d.worker('purchase',{id:claim.job.id,lease:claim.job.lease,serviceId:service.id,expectedPrice:service.price,input:{claim:'Verify the recorded public evidence'}})).rejects.toMatchObject({code:'INSUFFICIENT_BALANCE'});
+ const policy=await d.worker('policy',{id:claim.job.id,lease:claim.job.lease});expect(policy.computeAvailableMicro).toBeGreaterThan(0);expect(policy.operatingAvailableMicro).toBe(0);
+ await d.worker('defer',{id:claim.job.id,lease:claim.job.lease,deferred:{reason:'awaiting-data',seconds:3600}});
 });
 it('stores case-sensitive creator tickers unchanged in Coin records and config',async()=>{
  for(const ticker of ['radar','RADAR','Radar','rAdAr']){const session=await login(),created=await d.publicDispatch('agents/create',{input:{...input('Case preservation'),ticker},key:randomUUID()},session),row=await one(db,'SELECT ticker,config FROM agents WHERE id=$1',[created.id]);expect(row?.ticker).toBe(ticker);expect(row?.config.ticker).toBe(ticker);}
@@ -78,7 +75,7 @@ it('allows waiting only after a failed supplier is refunded, never with a live d
  const supplier=await d.publicDispatch('agents/create',{input:input('REFUND VERIFY','Verifier'),key:randomUUID()},other);await run(await d.worker('claim',{worker:'refund-baseline'}));
  const customer=await d.publicDispatch('agents/create',{input:input('REFUND BUYER'),key:randomUUID()},owner),c=await d.worker('claim',{worker:'refund-buyer'});expect(c.agent.id).toBe(customer.id);
  const s=(await d.publicDispatch('services/list')).find((s:any)=>s.agent_id===supplier.id);
- const receipt=await d.worker('purchase',{id:c.job.id,lease:c.job.lease,serviceId:s.id,input:{claim:'Check this claim'}});
+ const receipt=await d.worker('purchase',{id:c.job.id,lease:c.job.lease,serviceId:s.id,expectedPrice:s.price,input:{claim:'Check this claim'}});
  await expect(d.worker('defer',{id:c.job.id,lease:c.job.lease,deferred:{reason:'awaiting-data',seconds:60}})).rejects.toMatchObject({code:'DEPENDENCY_EXISTS'});
  const sc=await d.worker('claim',{worker:'refund-supplier',serviceOnly:true});expect(sc.job.id).toBe(receipt.jobId);await d.worker('fail',{id:sc.job.id,lease:sc.job.lease,error:'Unavailable source',permanent:true});
  await d.worker('defer',{id:c.job.id,lease:c.job.lease,deferred:{reason:'awaiting-data',seconds:60}});
@@ -91,14 +88,14 @@ it('does not advertise or accept an autonomous order during supplier budget cool
  await db.query("UPDATE agents SET config=jsonb_set(config,'{policy,hourlySpend}','0.1') WHERE id=$1",[supplier.id]);
  const s=(await d.publicDispatch('services/list')).find((s:any)=>s.agent_id===supplier.id);
  expect((await d.worker('services',{})).some((v:any)=>v.id===s.id)).toBe(false);
- await expect(d.worker('purchase',{id:c.job.id,lease:c.job.lease,serviceId:s.id,input:{claim:'Check this claim'}})).rejects.toMatchObject({code:'SERVICE_UNAVAILABLE'});
+ await expect(d.worker('purchase',{id:c.job.id,lease:c.job.lease,serviceId:s.id,expectedPrice:s.price,input:{claim:'Check this claim'}})).rejects.toMatchObject({code:'SERVICE_UNAVAILABLE'});
  expect((await db.query('SELECT id FROM service_requests WHERE parent_job_id=$1',[c.job.id])).rows).toHaveLength(0);
 });
 it('parks pending supplier work without burning attempts or losing its payment',async()=>{
  await db.query('UPDATE agents SET paused=true');
  const supplier=await d.publicDispatch('agents/create',{input:input('WAIT VERIFY','Verifier'),key:randomUUID()},other);await run(await d.worker('claim',{worker:'wait-baseline'}));
  const customer=await d.publicDispatch('agents/create',{input:input('WAIT BUYER'),key:randomUUID()},owner),c=await d.worker('claim',{worker:'wait-buyer'});expect(c.agent.id).toBe(customer.id);
- const s=(await d.publicDispatch('services/list')).find((s:any)=>s.agent_id===supplier.id),receipt=await d.worker('purchase',{id:c.job.id,lease:c.job.lease,serviceId:s.id,input:{claim:'Check supplied evidence'}});
+ const s=(await d.publicDispatch('services/list')).find((s:any)=>s.agent_id===supplier.id),receipt=await d.worker('purchase',{id:c.job.id,lease:c.job.lease,serviceId:s.id,expectedPrice:s.price,input:{claim:'Check supplied evidence'}});
  await d.worker('usage',{id:c.job.id,lease:c.job.lease,cost:1500,runs:[{kind:'model',provider:'test',name:'plan',cost:1500}]});
  await d.worker('await-supplier',{id:c.job.id,lease:c.job.lease});expect(await one(db,'SELECT status,phase,attempts FROM jobs WHERE id=$1',[c.job.id])).toMatchObject({status:'queued',phase:'WAITING_SUPPLIER',attempts:0});
  expect((await d.publicDispatch('jobs/get',{id:receipt.jobId})).receipt.status).toBe('reserved');

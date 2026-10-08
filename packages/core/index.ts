@@ -15,7 +15,7 @@ export function ensure(condition: unknown, code: string, message: string, status
 }
 const dollars = z.number().finite().min(0).max(10000).refine(n => Math.abs(micro(n) / 1e6 - n) < 1e-9, 'Use at most six decimal places');
 export const policySchema = z.object({
-  maxPurchase: dollars.default(0.05), hourlySpend: dollars.default(0.25), dailySpend: dollars.default(1), maxRunCost: dollars.min(0.001).default(0.02),
+  separateServiceBudget: z.boolean().default(false), maxPurchase: dollars.default(0.05), hourlySpend: dollars.default(0.25), dailySpend: dollars.default(1), maxRunCost: dollars.min(0.001).default(0.02),
   allowedNetworks: z.array(z.enum(['sandbox','devnet'])).min(1).default(['sandbox','devnet']),
   allowedAssets: z.array(z.string().min(1).max(64)).min(1).max(8).default(['USDC','4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU']),
   counterparties: z.array(z.string().uuid()).max(100).default([]), killSwitch: z.boolean().default(false),
@@ -69,9 +69,9 @@ export function authorizePurchase(p: Policy, ctx: { amount: number; balance: num
   ensure(!p.counterparties.length||p.counterparties.includes(ctx.counterparty||''),'COUNTERPARTY_DENIED','Seller is outside this agent’s allowlist');
   ensure(p.autoHire, 'HIRING_DISABLED', 'Automatic hiring is disabled for this agent');
   ensure(ctx.amount > 0 && ctx.amount <= micro(p.maxPurchase), 'PURCHASE_LIMIT', 'Purchase exceeds the per-transaction limit');
-  ensure(ctx.spentToday + ctx.amount <= micro(p.dailySpend), 'DAILY_LIMIT', 'Daily spending limit reached');
-  ensure((ctx.spentHour||0) + ctx.amount <= micro(p.hourlySpend), 'HOURLY_LIMIT', 'Hourly spending limit reached');
-  ensure(ctx.spentRun + ctx.amount <= micro(p.maxRunCost), 'RUN_LIMIT', 'Run spending limit reached');
+  ensure(ctx.spentToday + ctx.amount <= micro(p.separateServiceBudget?p.maxPurchase*p.purchasesPerDay:p.dailySpend), 'DAILY_LIMIT', 'Daily spending limit reached');
+  ensure((ctx.spentHour||0) + ctx.amount <= micro(p.separateServiceBudget?p.maxPurchase:p.hourlySpend), 'HOURLY_LIMIT', 'Hourly spending limit reached');
+  ensure(ctx.spentRun + ctx.amount <= micro(p.separateServiceBudget?p.maxPurchase*p.purchasesPerRun:p.maxRunCost), 'RUN_LIMIT', 'Run spending limit reached');
   ensure(ctx.purchasesToday < p.purchasesPerDay && ctx.purchasesRun < p.purchasesPerRun, 'PURCHASE_COUNT', 'Purchase count limit reached');
   ensure(ctx.amount <= ctx.balance, 'INSUFFICIENT_BALANCE', 'Insufficient operating balance');
   ensure(!p.preferredCategories.length || p.preferredCategories.includes(ctx.category as typeof categories[number]), 'CATEGORY_DENIED', 'Service category is outside this agent’s policy');

@@ -1,3 +1,4 @@
+import {pricingContext,updateServicePrice} from './service-pricing';
 import {platformProvisionAuthority,platformOperatorIdentity} from './platform-authority';
 import {requireStagingLauncher,stagingCredits} from './staging-launch';
 import {tickerSchema} from '../core';
@@ -385,7 +386,7 @@ export class Domain {
           const a=(await one(tx,'SELECT * FROM agents WHERE id=$1 FOR UPDATE',[j.agent_id]))!;
           if(await one(tx,"SELECT id FROM jobs WHERE agent_id=$1 AND status='running' AND (type='SERVICE')=$2",[a.id,j.type==="SERVICE"]))continue;
           a.config.policy=policySchema.parse(a.config.policy);
-          const spend=await operatingSpend(tx,a.id),reserve=micro(a.config.policy.maxRunCost);
+          const spend=await operatingSpend(tx,a.id,a.config.policy.separateServiceBudget?'compute':'combined'),reserve=micro(a.config.policy.maxRunCost);
           if(a.token_id&&(await one(tx,'SELECT routing_status FROM businesses WHERE id=$1',[a.business_id]))?.routing_status!=='VERIFIED')continue;
           if((await balances(tx,a.business_id)).computeDebt>0){await waitForEligibility(tx,a,j,'funds');continue;}
           if(a.terminated_at||a.config.policy.killSwitch)continue;
@@ -406,9 +407,11 @@ export class Domain {
       const job=await one(tx,'SELECT * FROM jobs WHERE id=$1 AND lease=$2 AND status=\'running\' FOR UPDATE',[jid.parse(b.id),jid.parse(b.lease)]);
       ensure(job,'STALE_LEASE','Worker lease no longer owns this job',409);
       const agent=(await one(tx,'SELECT * FROM agents WHERE id=$1 FOR UPDATE',[job.agent_id]))!;
+      if(op==='pricing-context')return pricingContext(tx,agent);
+      if(op==='service-price')return updateServicePrice(tx,agent,job,b.decision);
       if(op==='operation')return recordOperation(tx,agent,job,b.event);
       if(op==='browser/capture')return storeBrowserCapture(tx,agent,job,b.capture);
-      if(op==='policy') {await requireEnabled(tx,'agents');await requireProviderRun(tx,job,agent);ensure(!agent.paused&&!agent.terminated_at&&!agent.config.policy.killSwitch,'PAUSED','Agent has been paused');const serviceSpend=await one(tx,"SELECT COALESCE(sum(p.amount),0) amount FROM service_requests r JOIN payments p ON p.id=r.payment_id WHERE r.parent_job_id=$1 AND p.status<>'refunded'",[job.id]);return {config:agent.config,serviceSpentMicro:Number(serviceSpend?.amount||0),computeAvailableMicro:micro((await metrics(tx,agent)).balance)+Number(job.payload.reservedCost||0),computeDebt:(await balances(tx,agent.business_id)).computeDebt};}
+      if(op==='policy') {await requireEnabled(tx,'agents');await requireProviderRun(tx,job,agent);ensure(!agent.paused&&!agent.terminated_at&&!agent.config.policy.killSwitch,'PAUSED','Agent has been paused');const serviceSpend=await one(tx,"SELECT COALESCE(sum(p.amount),0) amount FROM service_requests r JOIN payments p ON p.id=r.payment_id WHERE r.parent_job_id=$1 AND p.status<>'refunded'",[job.id]);return {config:agent.config,serviceSpentMicro:agent.config.policy.separateServiceBudget?0:Number(serviceSpend?.amount||0),operatingAvailableMicro:micro((await metrics(tx,agent)).operatingBalance),computeAvailableMicro:micro((await metrics(tx,agent)).balance)+Number(job.payload.reservedCost||0),computeDebt:(await balances(tx,agent.business_id)).computeDebt};}
       if(op==='phase'){const phase=z.enum(['RUNNING','WAITING_TOOL','WAITING_PAYMENT']).parse(b.phase);await tx.query('UPDATE jobs SET phase=$1 WHERE id=$2',[phase,job.id]);if(process.env.NODE_ENV!=='test')logEvent('runtime','phase_changed',{trace_id:job.trace_id,run_id:job.run_id,job_id:job.id,agent_id:agent.id,business_id:agent.business_id,phase});return {ok:true};}
       if(op==='index/query'){const query=z.string().max(1000).parse(b.query||'');return (await tx.query("SELECT url,title,content,updated_at FROM indexed_records WHERE agent_id=$1 AND ($2='' OR to_tsvector('english',title||' '||content) @@ plainto_tsquery('english',$2)) ORDER BY updated_at DESC LIMIT 50",[agent.id,query])).rows;}
       if(op==='usage') {
@@ -434,7 +437,7 @@ export class Domain {
         // once per parent attempt; it cannot strand the parent permanently.
         if(previous&&previous.status!=='failed')return {id:previous.id,jobId:previous.job_id};
         ensure(!previous||previous.payment_status==='refunded','SUPPLIER_REFUND_PENDING','Failed supplier payment requires reconciliation before retry',503);
-        return purchase(tx,profile,serviceId,b.input,`agent:${job.id}:${serviceId}:attempt:${job.attempts}`,agent.id,job.id);
+        return purchase(tx,profile,serviceId,b.input,`agent:${job.id}:${serviceId}:attempt:${job.attempts}`,agent.id,job.id,b.expectedPrice===undefined?undefined:z.number().finite().min(0).max(10000).parse(b.expectedPrice));
       }
       if(op==='await-supplier') {
         ensure(job.type!=='SERVICE','RECURSION_DENIED','A supplier cannot wait on another supplier');
@@ -462,7 +465,7 @@ export class Domain {
     
     await requireEnabled(tx,'agents');ensure(!agent.paused&&!agent.terminated_at,'PAUSED','Agent was paused before completion');
         const cost=z.number().int().min(0).max(Number(job.payload.reservedCost)).parse(b.cost);
-        if(agent.config.autonomyVersion===1||agent.config.schedule==='continuous'){
+        if(!agent.config.policy.separateServiceBudget&&(agent.config.autonomyVersion===1||agent.config.schedule==='continuous')){
           const spent=await one(tx,"SELECT COALESCE(sum(p.amount),0) amount FROM service_requests r JOIN payments p ON p.id=r.payment_id WHERE r.parent_job_id=$1 AND p.status<>'refunded'",[job.id]);
           ensure(cost+Number(spent?.amount||0)<=micro(agent.config.policy.maxRunCost),'RUN_LIMIT','Combined compute and service cost exceeds the run limit');
         }

@@ -1,7 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import type {Agent,Service} from '../packages/core';
 import {marketplaceDefaults as defaults,serviceDisplayStatus,serviceAvailability,serviceChips,serviceMatches,serviceSample,sortServices,type ServiceEntry} from '../packages/core/marketplace-directory';
-function entry(id:string,service:Partial<Service>={},provider:Partial<Agent>={}):ServiceEntry{return {service:{id,agent_id:id,name:'Research a topic',agent_name:'SEARCH',ticker:'SEARCH',category:'Research',price:.01,active:true,jobs:2,failures:0,success:100,latency:2,created_at:'2026-10-01',response_schema:{type:'object',properties:{summary:{},sources:{}}},...service} as Service,provider:{id,job_type:'Researcher',config:{policy:{}},health:'HEALTHY',paused:false,metrics:{lifecycle:'ACTIVE'},operational:{state:'READY',active:false},...provider} as Agent};}
+function entry(id:string,service:Partial<Service>={},provider:Partial<Agent>={}):ServiceEntry{return {service:{id,agent_id:id,name:'Research a topic',agent_name:'SEARCH',ticker:'SEARCH',category:'Research',price:1,active:true,jobs:2,failures:0,success:100,latency:2,created_at:'2026-10-01',response_schema:{type:'object',properties:{summary:{},sources:{}}},...service} as Service,provider:{id,job_type:'Researcher',config:{policy:{}},health:'HEALTHY',paused:false,metrics:{lifecycle:'ACTIVE'},operational:{state:'READY',active:false},...provider} as Agent};}
 describe('Marketplace display semantics',()=>{
  it('keeps dormant services discoverable and shares truthful homepage status and ranking',()=>{
   const dormant=entry('dormant',{}, {metrics:{lifecycle:'DORMANT'} as Agent['metrics']}),ready=entry('ready'),busy=entry('busy',{}, {operational:{state:'WORKING',active:true}});
@@ -15,7 +15,7 @@ describe('Marketplace display semantics',()=>{
   expect(serviceMatches(e,{...f,role:'Verifier'},'role')).toBe(true);
  });
  it('price ranges partition boundary values without overlap or gaps',()=>{
-  const ranges=['under','low','mid','high'];for(const [p,want] of [[.009,'under'],[.01,'low'],[.05,'low'],[.050001,'mid'],[.1,'mid'],[.100001,'high']] as const){expect(ranges.filter(price=>serviceMatches(entry('a',{price:p}),{...defaults,price}))).toEqual([want]);}
+  const ranges=['under','low','mid','high'];for(const [p,want] of [[.99,'under'],[1,'low'],[5,'low'],[5.000001,'mid'],[10,'mid'],[10.000001,'high']] as const){expect(ranges.filter(price=>serviceMatches(entry('a',{price:p}),{...defaults,price}))).toEqual([want]);}
  });
  it('no history never qualifies as reliable and all-failed orders retain a measured zero',()=>{
   const empty=entry('none',{jobs:0,failures:0,success:0}),failed=entry('failed',{jobs:0,failures:3,success:0});expect(serviceSample(empty.service)).toBe(0);expect(serviceSample(failed.service)).toBe(3);expect(serviceMatches(empty,{...defaults,success:'90'})).toBe(false);expect(sortServices([empty,failed],'reliability')[0]).toBe(failed);

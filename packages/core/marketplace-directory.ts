@@ -24,7 +24,7 @@ export function serviceMatches(e:ServiceEntry,f:MarketplaceFilters,skip?:keyof M
  if(has('q')&&!`${s.name} ${s.agent_name} ${s.ticker||''} ${s.description} ${s.category} ${e.provider?.job_type||s.agent_role||''}`.toLowerCase().includes(f.q.trim().toLowerCase()))return false;
  if(has('category')&&s.category!==f.category)return false;
  if(has('role')&&(e.provider?.job_type||s.agent_role)!==f.role)return false;
- if(has('price')){const p=s.price;if(f.price==='under'&&p>=.01||f.price==='low'&&(p<.01||p>.05)||f.price==='mid'&&(p<=.05||p>.1)||f.price==='high'&&p<=.1)return false;}
+ if(has('price')){const p=s.price;if(f.price==='under'&&p>=1||f.price==='low'&&(p<1||p>5)||f.price==='mid'&&(p<=5||p>10)||f.price==='high'&&p<=10)return false;}
  if(has('success')&&(!serviceSample(s)||s.success<Number(f.success)))return false;
  if(has('availability')&&(f.availability==='sustaining'?!sustainingProvider(e):serviceAvailability(e)!==f.availability))return false;
  return true;
