@@ -6,7 +6,8 @@ import { PUMP_PROGRAM_ID,PUMP_EVENT_AUTHORITY_PDA,normalizeQuoteMint,bondingCurv
 import { ensure } from '../core';
 import { pumpProgram,type RoutingState } from './adapter';
 // Anchor event-CPI tag is derived, not an old Pump instruction layout.
-const eventTag=createHash('sha256').update('anchor:event').digest().subarray(0,8);
+// Anchor serializes its event-CPI u64 discriminator in little-endian order.
+const eventTag=createHash('sha256').update('anchor:event').digest().subarray(0,8).reverse();
 export type PumpReceipt={network:string;businessId:string;mint:string;sharingConfig:string;signature:string;instructionIndex:number;eventIndex:number;slot:number;blockTime:number;quoteMint:string;quoteDecimals:number;rawAmount:string;normalizedAmount:string;treasury:string;operation:string;confirmation:'finalized';key:string;evidence:Record<string,unknown>};
 export function formatRaw(raw:bigint,decimals:number){const s=raw.toString().padStart(decimals+1,'0');return decimals?`${s.slice(0,-decimals)}.${s.slice(-decimals)}`:s;}
 export function parseRaw(text:string,decimals:number){ensure(/^\d+(\.\d+)?$/.test(text),'PUMP_AMOUNT','Invalid nonnegative decimal amount');const [whole,part='']=text.split('.');ensure(part.length<=decimals,'PUMP_AMOUNT','Too many asset decimal places');return BigInt(whole)*10n**BigInt(decimals)+BigInt((part+'0'.repeat(decimals)).slice(0,decimals)||'0');}

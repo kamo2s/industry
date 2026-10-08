@@ -1,0 +1,98 @@
+{
+  "signature": "5vXXCEFivHTPyMs1hYcfWJgwVEcqHutKYVbfFeEsoF1EwYtEraAhMWQaEestdH5qBaAcEt5RWFwAurSJMEpqzdG7",
+  "slot": 454351934,
+  "blockTime": 1791410859,
+  "message": "gAEABQey+WIVrZrLlhTGocoKwNsLejG8bsQOfSdfqCRLYMxF/G3wgZV3LG5kuzAuoirGba8GMbD9tt8P5pJ6jpe4tkgwAVbg9pNmWs9E2xVovxdbqlGJy5f10v87ZV0rtv1tGLADBkZv5SEXMv/srbpyw5vnvIzlu8X3EmssQ5s6QAAAAAlIGFX8Z6oIprX+ejZVMyLr1XiWvQN2LInNvU+/CG93fq6YmCzmpMWLfufuJUB0eAOMG65dziS5ZWg1jkeXToG8tmsj5IH/Yzo9rSReZYZUy1FWCyWcPNDWYNwlHh99g5VNzzbdGCL8EuG+ghAOC5dYVrFjfOtVLwLM4yJo+gcyAwMBCAUCYY4AAAMACQOghgEAAAAAAAIIBgQFAQcJAgAIpXJnAHnO91EB/EKeIF6Hp0DirM2FrbwRsMURgUdUy05+88jCpuXCokoAAwqgAw==",
+  "meta": {
+    "err": null,
+    "status": {
+      "Ok": null
+    },
+    "fee": 8645,
+    "preBalances": [
+      9187138,
+      34094135,
+      9393912471,
+      1,
+      1417332,
+      5852160,
+      2636520,
+      1,
+      10000000,
+      168261611
+    ],
+    "postBalances": [
+      42622388,
+      650240,
+      9393912471,
+      1,
+      1417332,
+      5852160,
+      2636520,
+      1,
+      10000000,
+      168261611
+    ],
+    "innerInstructions": [
+      {
+        "index": 2,
+        "instructions": [
+          {
+            "programIdIndex": 7,
+            "accounts": [
+              1,
+              0
+            ],
+            "data": "3Bxs4A7JGAogev4f",
+            "stackHeight": 2
+          },
+          {
+            "programIdIndex": 2,
+            "accounts": [
+              9
+            ],
+            "data": "2M4dU3kSMN48Am3JGL5AYLJn1xNFPYzPKMw2Ld8A68iAaEu3GxYwZFBwqKeR4mpgQimNVAmebqotvLa5C1vDtreHFGxRGD2gRgaM4nRE3va1e9KQ87TTcjapXcL2jnbLTLzu81BacU4uA7YPd63wQUfMEWGAvVkRVLgQgUGnAhw5cndRG3pvw8HdQduc73k7M2Qd7bp88oma4aLwp8Lkt6D8FuLAVwcPPq9L9CictevwJec35WZv5GywTte9Hjyo76F8U2BweTzk2iqfNXKLAJBWg4GRQwXb9biqVS4FijiuJrayMmr7b81NDhR",
+            "stackHeight": 2
+          }
+        ]
+      }
+    ],
+    "logMessages": [
+      "Program ComputeBudget111111111111111111111111111111 invoke [1]",
+      "Program ComputeBudget111111111111111111111111111111 success",
+      "Program ComputeBudget111111111111111111111111111111 invoke [1]",
+      "Program ComputeBudget111111111111111111111111111111 success",
+      "Program 6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P invoke [1]",
+      "Program log: Instruction: DistributeCreatorFees",
+      "Program 11111111111111111111111111111111 invoke [2]",
+      "Program 11111111111111111111111111111111 success",
+      "Program data: pTeBcASzyiirwsZqAAAAALy2ayPkgf9jOj2tJF5lhlTLUVYLJZw80NZg3CUeH32DCUgYVfxnqgimtf56NlUzIuvVeJa9A3Ysic29T78Ib3d+rpiYLOakxYt+5+4lQHR4A4wbrl3OJLllaDWOR5dOgRADdK1xytGEDEHSrY4h1lqsnfUDB6deCEpy7H0in3pmAQAAALL5YhWtmsuWFMahygrA2wt6MbxuxA59J1+oJEtgzEX8ECc3UP4BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "Program 6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P invoke [2]",
+      "Program 6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P consumed 2164 of 8811 compute units",
+      "Program 6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P success",
+      "Program 6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P consumed 30074 of 36149 compute units",
+      "Program return: 6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P q8LGagAAAAC8tmsj5IH/Yzo9rSReZYZUy1FWCyWcPNDWYNwlHh99gwlIGFX8Z6oIprX+ejZVMyLr1XiWvQN2LInNvU+/CG93fq6YmCzmpMWLfufuJUB0eAOMG65dziS5ZWg1jkeXToEQA3StccrRhAxB0q2OIdZarJ31AwenXghKcux9Ip96ZgEAAACy+WIVrZrLlhTGocoKwNsLejG8bsQOfSdfqCRLYMxF/BAnN1D+AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+      "Program 6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P success"
+    ],
+    "preTokenBalances": [],
+    "postTokenBalances": [],
+    "rewards": [],
+    "loadedAddresses": {
+      "writable": [],
+      "readonly": [
+        "11111111111111111111111111111111",
+        "jitodontfront111111111111111111nopainnogain",
+        "Ce6TQqeHC9p8KetsN6JsjHK7UTZk7nasjjnr7XxXp9F1"
+      ]
+    },
+    "returnData": {
+      "programId": "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P",
+      "data": [
+        "q8LGagAAAAC8tmsj5IH/Yzo9rSReZYZUy1FWCyWcPNDWYNwlHh99gwlIGFX8Z6oIprX+ejZVMyLr1XiWvQN2LInNvU+/CG93fq6YmCzmpMWLfufuJUB0eAOMG65dziS5ZWg1jkeXToEQA3StccrRhAxB0q2OIdZarJ31AwenXghKcux9Ip96ZgEAAACy+WIVrZrLlhTGocoKwNsLejG8bsQOfSdfqCRLYMxF/BAnN1D+AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+        "base64"
+      ]
+    },
+    "computeUnitsConsumed": 30374,
+    "costUnits": 34267
+  }
+}

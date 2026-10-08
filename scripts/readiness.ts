@@ -5,7 +5,7 @@ import {safetyConfig} from '../packages/core/security';
 const role=(process.argv.find(a=>a.startsWith('--role='))?.split('=')[1]||'database') as 'database'|'web'|'worker'|'collector';
 let valid=true;try{safetyConfig();validateEnvironment(role);}catch(e){valid=false;console.log(JSON.stringify({name:'SAFE CONFIGURATION',status:'BLOCKED',detail:(e as Error).message}));}
 const items=readinessConfiguration();for(const item of items)console.log(JSON.stringify(item));
-const financial=new Set(['PUMP','TREASURY','COLLECTOR','METADATA','ALT','PYTH']),production=appEnvironment()==='production'||process.argv.includes('--target=production');
+const financial=new Set(['PUMP','TREASURY','COLLECTOR','METADATA','ALT','RECEIPT PRICING']),production=appEnvironment()==='production'||process.argv.includes('--target=production');
 const blockers=items.filter(i=>(i.status==='MISSING'||i.status==='BLOCKED'||production&&financial.has(i.name)&&i.status==='DISABLED')&&(production||!financial.has(i.name)&&i.name!=='CI'));
 if(process.argv.includes('--strict')&&(!valid||blockers.length))process.exitCode=1;
 if(process.argv.includes('--probe')){

@@ -22,7 +22,7 @@ Autonomous planning uses retained objectives, findings and sources. After bounde
 
 Business accounts include BUSINESS_OPERATING and BUSINESS_COMPUTE; platform accounts include PLATFORM_REVENUE, TREASURY_CLEARING and SETTLEMENT_ESCROW. Normal internal hiring settles through double-entry accounting without a blockchain transaction. Pump creator fees ultimately reside in one pooled INDUSTRY Fee Treasury; internal business allocation does not move physical funds.
 
-Confirmed SOL receipts remain physically SOL. Preserve raw SOL, mint/business, signature, slot/time, trusted SOL/USD source/price/time and resulting USD accounting value. This is accounting conversion, not a swap. Missing fresh trusted pricing means PENDING_CONVERSION, no USD credit yet, safe retry and exactly-once allocation. Use Pyth/trusted production oracle, not a manipulable single DEX spot.
+Confirmed SOL receipts remain physically SOL. Preserve raw SOL, mint/business, signature, slot/time, trusted SOL/USD source/price/time and resulting USD accounting value. This is accounting conversion, not a swap. Missing fresh trusted pricing means PENDING_CONVERSION, no USD credit yet, safe retry and exactly-once allocation. Use the owner-approved free Coinbase Exchange SOL-USD one-minute candle close containing the receipt. Wait until the candle closes, retain OHLC/volume and response hash, and leave missing/invalid or over-5%-range candles pending. This is an exchange accounting reference, not an oracle or executable quote. Previously stored valid Pyth proofs remain supported; never substitute a current spot price for an older receipt.
 
 Creator-fee allocation by cumulative confirmed USD-valued fees:
 

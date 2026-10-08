@@ -18,7 +18,7 @@ export function readinessConfiguration(){
   {name:'COLLECTOR',status:validOperationalAddress(process.env.INDUSTRY_FEE_COLLECTOR)?'READY':'BLOCKED',detail:validOperationalAddress(process.env.INDUSTRY_FEE_COLLECTOR)?'Public address configured':'NOT CONFIGURED'},
   {name:'METADATA',status:process.env.PUMP_METADATA_BASE_URL?.startsWith('https://')?'READY':'MISSING',detail:'Stable HTTPS required before future token launch'},
   {name:'ALT',status:process.env.PUMP_LOOKUP_TABLES?.split(',').some(v=>validOperationalAddress(v.trim()))?'BLOCKED':'MISSING',detail:'Read-only on-chain contents and authority preflight required before Pump acceptance'},
-  {name:'PYTH',status:'BLOCKED',detail:'Receipt-time historical price proof required; unpriced SOL receipts stay PENDING_CONVERSION'},
+  {name:'RECEIPT PRICING',status:'READY',detail:'Coinbase public SOL/USD minute-close pricing configured; each receipt requires validated historical evidence'},
   {name:'ADMIN',status:process.env.ADMIN_WALLETS?.split(',').some(v=>validOperationalAddress(v.trim()))?'READY':'MISSING',detail:'Wallet allowlist'},
   {name:'RATE LIMITS',status:env==='local'||process.env.TRUST_PROXY_IP_HEADER?'READY':'MISSING',detail:env==='local'?'Shared local bucket':'Requires trusted overwritten proxy IP header'},
   {name:'BACKUPS',status:process.env.BACKUP_RESTORE_VERIFIED_AT?'READY':'MISSING',detail:process.env.BACKUP_RESTORE_VERIFIED_AT||'Restore drill required'},
@@ -56,7 +56,7 @@ export async function systemHealth(tx:Queryable){
   {name:'RPC / programs',status:process.env.PUMP_RPC_URL?'BLOCKED':'MISSING',detail:'Verify genesis and executable program accounts with pump-preflight'},
   {name:'Metadata',status:process.env.PUMP_METADATA_BASE_URL?.startsWith('https://')?'READY':'MISSING',detail:'HTTPS origin configuration; fetch must pass preflight'},
   {name:'Address lookup table',status:'BLOCKED',detail:'Configured chain table must pass pump:lookup check'},
-  {name:'Pyth receipt pricing',status:'BLOCKED',detail:'Fresh historical receipt-time proof required; otherwise PENDING_CONVERSION'},
+  {name:'Coinbase receipt pricing',status:'READY',detail:'Public historical SOL/USD candles; missing or invalid receipt evidence stays PENDING_CONVERSION'},
   {name:'Fee allocation policy',status:'READY',detail:'Approved V1 policy validated on application; no economic changes'},
   {name:'Launch',status:pump.enabled?'BLOCKED':'DISABLED',detail:pump.enabled?'Flag enabled; separate prerequisites apply':'No broadcast'},
   {name:'Collection',status:pump.collectionEnabled?'BLOCKED':'DISABLED',detail:pump.collectionEnabled?'Flag enabled; separate prerequisites apply':'No broadcast'},
@@ -64,4 +64,3 @@ export async function systemHealth(tx:Queryable){
  ];
  return {environment:appEnvironment(),publicUrl:publicAppUrl(),at:new Date().toISOString(),database:'READY',web:'RESPONDING',realtime:'SSE · 3-second authorized refresh; no direct Supabase subscription',worker:worker?.last,processes,queue,budget,costs,topBusinesses,topJobs,alerts,readiness:readinessConfiguration(),pump,pumpReadiness,ledgerInvariantErrors:Number(invariant?.n)};
 }
-
