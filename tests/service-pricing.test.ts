@@ -9,6 +9,7 @@ import {autonomousLimits} from '../packages/core/autonomy';
 import {priceDecisionSchema} from '../packages/core/service-pricing';
 import {operatingSpend} from '../packages/db/controls';
 import {executeRun,MockLLMProvider} from '../packages/agent/runtime';
+import {purchase} from '../packages/db/economy';
 let db:Database,d:Domain,seller:any,buyer:any,claim:any,service:any;
 async function create(name:string){const k=nacl.sign.keyPair(),wallet=bs58.encode(k.publicKey),c=await d.publicDispatch('auth/challenge',{wallet});const {session}=await d.publicDispatch('auth/verify',{id:c.id,wallet,signature:bs58.encode(nacl.sign.detached(new TextEncoder().encode(c.message),k.secretKey))});return d.publicDispatch('agents/create',{key:randomUUID(),input:agentSchema.parse({name,ticker:name,description:'Public research service business',mission:'Research public software documentation and source evidence.',category:'Research',tags:[],jobType:name==='SELLER'?'Verifier':'Researcher',tools:['web_search'],brain:'development/mock',tokenMode:'sandbox',policy:defaultPolicy,services:[{name:'Research service',description:'Research public source evidence.',price:1}]})},session);}
 beforeAll(async()=>{vi.stubEnv('APP_MODE','demo');vi.stubEnv('WALLET_ENCRYPTION_KEY','4'.repeat(64));vi.stubEnv('OPENROUTER_API_KEY','');db=await database(true);await migrate(db);d=new Domain(db);seller=await create('SELLER');claim=await d.worker('claim',{worker:'price-owner'});buyer=await create('BUYER');service=(await d.publicDispatch('services/list')).find((s:any)=>s.agent_id===seller.id);});
@@ -53,4 +54,18 @@ it('applies the Coin planner’s own price decision without a separate model cal
  expect(plan).toHaveBeenCalledTimes(1);expect(plan.mock.calls[0][4]!.pricing).toHaveLength(1);
  expect(Number((await one(db,'SELECT price_amount FROM agent_services WHERE id=$1',[service.id]))!.price_amount)).toBe(micro(2));
 });
+it('refunds the original escrow amount when a listing changes after purchase',async()=>{
+ const customer=await create('REFUNDBUYER');
+ const a=(await one(db,'SELECT * FROM agents WHERE id=$1',[customer.id]))!;
+ const profile=(await one(db,'SELECT * FROM profiles WHERE id=$1',[a.creator_profile_id]))!;
+ await db.query('UPDATE agent_services SET price_amount=1000000,price_updated_at=NULL WHERE id=$1',[service.id]);
+ const order=await db.transaction(tx=>purchase(tx,profile,service.id,{claim:'Assess the official documentation.'},randomUUID(),a.id,undefined,1));
+ await d.worker('service-price',{id:claim.job.id,lease:claim.job.lease,decision:{serviceId:service.id,price:5,reason:'A wider service scope requires additional inspection.'}});
+ const child=await d.worker('claim',{worker:'refund-supplier',serviceOnly:true});expect(child.job.id).toBe(order.jobId);
+ await d.worker('fail',{id:child.job.id,lease:child.job.lease,error:'Source unavailable',permanent:true});
+ const receipt=(await d.publicDispatch('jobs/get',{id:order.jobId})).receipt;
+ expect(receipt.status).toBe('refunded');expect(Number((await one(db,'SELECT p.amount FROM payments p JOIN service_requests r ON r.payment_id=p.id WHERE r.job_id=$1',[order.jobId]))!.amount)).toBe(micro(1));
+ expect((await d.publicDispatch('agents/get',{id:a.id})).agent.metrics.operatingBalance).toBe(1);
+});
+
 

@@ -12,3 +12,11 @@ Owner direction: $1 minimum listing price, Coin-selected prices, $10 per-order p
 Validation: 355 tests pass across 45 files, including real internal $1 reservation/settlement, separate compute accounting, $10 cap, insufficient funds, stale quotes, ownership/lease checks, cooldown, actual pricing context and planner integration. Typecheck passed. Build and hosted browser checks pending.
 
 Critic: Raising prices does not guarantee demand. Low Operating balances will reduce purchasing; Coin pricing choices only occur on eligible funded planning runs. No claim of live-model price decisions until observed. Legacy explicit development fixtures retain their old policy/schema for historical regression testing; public launch normalization enforces the new starting price.
+
+## Hosted verification — October 7, 22:45 EDT
+
+Application commit 0885d5ef172983fb6eaeb3ce7c4c62edfcc75e45 deployed successfully to web, worker and database. Migration applied at 02:41:34 UTC. All eight public service listings are $1, every public Coin has maxPurchase=10 and separateServiceBudget=true, and each original AI run ceiling is unchanged. Ledger imbalance query returned no rows; scheduler/collector/market-data healthy. See before.json and production.json.
+
+Three browser review passes inspected actual hosted Marketplace at 1920×1080, 1440×1000 and 390×844. New price filter selects all eight $1 listings, Over $10 returns an honest empty state, Clear filters restores results; mobile drawer selects/applies correctly. Mobile/desktop overflow checks passed. View Service shows the same $1 contract price. Existing layout, black theme and historical totals retained. Screenshots: desktop-1920.png, desktop-1440.png, mobile-filters.png, mobile-390.png.
+
+Production build passed. Full regression: 355 tests passed; subsequently added original-price refund regression and all five pricing tests passed (356 total tests now covered). Targeted lint/typecheck passed. Live pricing choices are enabled but no live-model price change has yet been observed; no run was forced or extra funds granted to manufacture evidence. Coins keep the $1 starting price until eligible planning and evidence justify adjustment.
