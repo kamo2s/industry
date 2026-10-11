@@ -1,3 +1,4 @@
+import {monitorStatus} from './monitor';
 import {refreshMarkets} from '../market/refresh';
 import {validateEnvironment,appEnvironment} from '../core/environment';
 import 'dotenv/config';
@@ -30,6 +31,12 @@ let pruning=false;const cleanup=async()=>{if(pruning)return;pruning=true;let sta
 if(process.env.PUMP_COLLECTOR_API_SECRET&&(process.env.PUMP_COLLECTOR_API_SECRET.length<32||[process.env.INTERNAL_API_SECRET,process.env.WORKER_API_SECRET].includes(process.env.PUMP_COLLECTOR_API_SECRET)))throw new Error('Pump collector requires a distinct credential of at least 32 characters');
 const server=createServer(async(req,res)=>{
   const requestId=randomUUID();res.setHeader('Content-Type','application/json');res.setHeader('X-Request-Id',requestId);
+  if(req.url==='/monitor'){
+    res.setHeader('Cache-Control','no-store');
+    const key=process.env.MONITOR_API_SECRET;
+    if(req.method!=='GET'||!key||key.length<32||!equalSecret(req.headers.authorization||'',`Bearer ${key}`)){res.writeHead(401);res.end('{}');return;}
+    try{res.end(JSON.stringify(await monitorStatus(db)));}catch{res.writeHead(503);res.end(JSON.stringify({healthy:false,alerts:['DATABASE_UNAVAILABLE']}));}return;
+  }
   if(!['/rpc','/worker','/collector'].includes(req.url||'')){res.writeHead(404);res.end('{}');return;}
   const secret=req.url==='/collector'?process.env.PUMP_COLLECTOR_API_SECRET:req.url==='/worker'?process.env.WORKER_API_SECRET||process.env.INTERNAL_API_SECRET:process.env.INTERNAL_API_SECRET;
   if(!secret||!equalSecret(req.headers.authorization||'',`Bearer ${secret}`)) {res.writeHead(401);res.end(JSON.stringify({error:{code:'UNAUTHORIZED',message:'Unauthorized'}}));return;}
@@ -46,3 +53,4 @@ const server=createServer(async(req,res)=>{
 });
 server.listen(Number(process.env.DB_PORT||4318),process.env.DB_HOST||'127.0.0.1',()=>console.log(JSON.stringify({service:'database',status:'ready',mode:demoMode()?'demo':appEnvironment()})));
 for(const signal of ['SIGINT','SIGTERM'] as const) process.on(signal,()=>server.close(()=>{void db.close().then(()=>process.exit(0));}));
+
