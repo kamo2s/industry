@@ -1,3 +1,4 @@
+import {clientIp} from '../../../../../packages/core/client-ip';
 import {publicAppUrl,validateEnvironment} from '../../../../../packages/core/environment';
 import {ratePolicy,rateNamespace} from '../../../../../packages/core/rate-policy';
 import { NextRequest,NextResponse } from 'next/server';
@@ -31,7 +32,8 @@ async function handler(req:NextRequest,{params}:{params:Promise<{path:string[]}>
     const identity=token&&!paidInvocation?await rpc('auth/session',{},token):null;
     // This header is trusted only when an operator-controlled reverse proxy
     // overwrites it. Never trust arbitrary client X-Forwarded-For by default.
-    const ip=process.env.TRUST_PROXY_IP_HEADER?req.headers.get(process.env.TRUST_PROXY_IP_HEADER)?.split(',')[0]?.trim()||'unknown':'local';
+    const ip=clientIp(req.headers,process.env.TRUST_PROXY_IP_HEADER);
+    if(!ip)throw new AppError('INGRESS_UNAVAILABLE','Unable to verify request origin. Try again shortly.',503);
     const {name:rateClass,limit}=ratePolicy(route,req.method);
     const keys=[`ip:${hash(`${process.env.SESSION_SECRET}:${ip}`)}:${rateClass}`,...(identity?.profile?[`wallet:${identity.profile.id}:${rateClass}`]:[])];
     for(const key of keys)if(!(await rpc('rate',{key:rateNamespace()+':'+key,limit})).allowed)throw new AppError('RATE_LIMIT','Too many requests. Try again in a minute.',429);
