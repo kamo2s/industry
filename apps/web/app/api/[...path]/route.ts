@@ -32,7 +32,8 @@ async function handler(req:NextRequest,{params}:{params:Promise<{path:string[]}>
     const identity=token&&!paidInvocation?await rpc('auth/session',{},token):null;
     // This header is trusted only when an operator-controlled reverse proxy
     // overwrites it. Never trust arbitrary client X-Forwarded-For by default.
-    const ip=clientIp(req.headers,process.env.TRUST_PROXY_IP_HEADER);
+    // Railway's internal health probe bypasses HTTP ingress and has no client-IP header.
+    const ip=clientIp(req.headers,process.env.TRUST_PROXY_IP_HEADER)??(route==='health'&&req.method==='GET'?'health-probe':null);
     if(!ip)throw new AppError('INGRESS_UNAVAILABLE','Unable to verify request origin. Try again shortly.',503);
     const {name:rateClass,limit}=ratePolicy(route,req.method);
     const keys=[`ip:${hash(`${process.env.SESSION_SECRET}:${ip}`)}:${rateClass}`,...(identity?.profile?[`wallet:${identity.profile.id}:${rateClass}`]:[])];
