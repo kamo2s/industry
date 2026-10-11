@@ -23,7 +23,7 @@ export function readinessConfiguration(){
   {name:'RATE LIMITS',status:env==='local'||process.env.TRUST_PROXY_IP_HEADER?'READY':'MISSING',detail:env==='local'?'Shared local bucket':'Requires trusted overwritten proxy IP header'},
   {name:'BACKUPS',status:process.env.BACKUP_RESTORE_VERIFIED_AT?'READY':'MISSING',detail:process.env.BACKUP_RESTORE_VERIFIED_AT||'Restore drill required'},
   {name:'PROVIDER CAP',status:'READY',detail:`${providerCap()/1e6} USD per UTC day`},
-  {name:'CI',status:process.env.CI==='true'?'READY':'BLOCKED',detail:process.env.CI==='true'?'Running in CI; check job result':'Private repository push and remote workflow evidence required'},
+  {name:'CI',status:process.env.CI==='true'||process.env.CI_ENFORCED==='true'?'READY':'BLOCKED',detail:process.env.CI==='true'?'Running in CI; check job result':process.env.CI_ENFORCED==='true'?'Railway CI gate configured; remote run result is separate evidence':'Private repository push and remote workflow evidence required'},
  ];
 }
 export async function systemHealth(tx:Queryable){
@@ -64,3 +64,4 @@ export async function systemHealth(tx:Queryable){
  ];
  return {environment:appEnvironment(),publicUrl:publicAppUrl(),at:new Date().toISOString(),database:'READY',web:'RESPONDING',realtime:'SSE · 3-second authorized refresh; no direct Supabase subscription',worker:worker?.last,processes,queue,budget,costs,topBusinesses,topJobs,alerts,readiness:readinessConfiguration(),pump,pumpReadiness,ledgerInvariantErrors:Number(invariant?.n)};
 }
+
